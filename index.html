@@ -126,12 +126,11 @@
       position: relative;
       display: grid;
       min-height: 92vh;
-      place-items: end start;
+      place-items: center;
       padding: 128px 24px 72px;
       background:
-        linear-gradient(90deg, rgba(17, 16, 14, 0.92) 0%, rgba(17, 16, 14, 0.6) 38%, rgba(17, 16, 14, 0.2) 100%),
-        linear-gradient(0deg, rgba(17, 16, 14, 1) 0%, rgba(17, 16, 14, 0) 42%),
-        url("assets/hero-cover.jpeg") center / cover;
+        radial-gradient(circle at 82% 20%, rgba(242, 163, 58, 0.18), transparent 28rem),
+        linear-gradient(135deg, rgba(17, 16, 14, 0.96) 0%, rgba(29, 27, 24, 0.98) 48%, rgba(14, 13, 12, 1) 100%);
     }
 
     .hero::after {
@@ -159,7 +158,51 @@
       position: relative;
       z-index: 1;
       display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(280px, 520px);
+      gap: 42px;
+      align-items: center;
+    }
+
+    .hero-text {
+      display: grid;
       gap: 28px;
+    }
+
+    .hero-media {
+      position: relative;
+      display: grid;
+      width: min(100%, 520px);
+      aspect-ratio: 1;
+      place-items: center;
+      justify-self: end;
+      margin: 0;
+      padding: 12px;
+      overflow: hidden;
+      border: 1px solid rgba(247, 240, 223, 0.16);
+      border-radius: 8px;
+      background:
+        linear-gradient(180deg, rgba(247, 240, 223, 0.09), rgba(247, 240, 223, 0.03)),
+        rgba(17, 16, 14, 0.58);
+      box-shadow: var(--shadow);
+    }
+
+    .hero-media::before {
+      position: absolute;
+      inset: 12px;
+      border: 1px solid rgba(242, 163, 58, 0.22);
+      border-radius: 6px;
+      content: "";
+      pointer-events: none;
+    }
+
+    .hero-media img {
+      width: 100%;
+      height: 100%;
+      min-width: 0;
+      min-height: 0;
+      object-fit: contain;
+      border-radius: 6px;
+      background: #0d0c0b;
     }
 
     .eyebrow {
@@ -491,7 +534,16 @@
       .hero {
         min-height: 92vh;
         padding: 112px 18px 56px;
-        background-position: 62% center;
+      }
+
+      .hero-content {
+        grid-template-columns: 1fr;
+        gap: 32px;
+      }
+
+      .hero-media {
+        width: min(100%, 430px);
+        justify-self: center;
       }
 
       .section {
@@ -547,6 +599,14 @@
         padding-top: 164px;
       }
 
+      .hero-text {
+        gap: 20px;
+      }
+
+      .hero-media {
+        width: min(100%, 340px);
+      }
+
       .hero-actions {
         flex-direction: column;
       }
@@ -586,13 +646,18 @@
 
     <header class="hero" id="top">
       <div class="hero-content">
-        <p class="eyebrow">Premium road journal</p>
-        <h1>Feho's Motocycle Road</h1>
-        <p class="hero-copy">A cinematic corner for throttle therapy, sunrise routes, weekend escapes, and the small rituals that make every ride feel bigger than the map.</p>
-        <div class="hero-actions" aria-label="Page sections">
-          <a class="button primary" href="#routes">Explore routes</a>
-          <a class="button secondary" href="#journal">Read the road notes</a>
+        <div class="hero-text">
+          <p class="eyebrow">Premium road journal</p>
+          <h1>Feho's Motocycle Road</h1>
+          <p class="hero-copy">A cinematic corner for throttle therapy, sunrise routes, weekend escapes, and the small rituals that make every ride feel bigger than the map.</p>
+          <div class="hero-actions" aria-label="Page sections">
+            <a class="button primary" href="#routes">Explore routes</a>
+            <a class="button secondary" href="#journal">Read the road notes</a>
+          </div>
         </div>
+        <figure class="hero-media" aria-label="Feho's motorcycle adventure cover">
+          <img src="assets/hero-cover.jpeg" alt="Illustrated motorcycle adventure rider on a yellow Honda by the coast">
+        </figure>
       </div>
     </header>
 
