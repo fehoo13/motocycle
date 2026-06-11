@@ -1,4 +1,11 @@
 const STORAGE_KEY = "feho_motocycle_routes";
+const CAYYOLU_START = {
+  name: "Çayyolu / Başlangıç",
+  description: "Her rota için 1 numaralı başlangıç noktası.",
+  note: "Başlangıç noktası.",
+  coords: [39.8820606, 32.6893723],
+  favorite: true
+};
 
 let routes = mergeStoredRoutes(window.FEHO_ROUTES || []);
 
@@ -395,17 +402,17 @@ function renderStops(stops) {
 
 function startBlankRoute() {
   state.builderRouteId = null;
-  state.builderStops = [];
+  state.builderStops = [cloneStop(CAYYOLU_START)];
   els.builderName.value = `ROTA-${routes.length + 1} - Yeni Loop`;
   renderBuilderStops();
-  clearMapRoute();
+  previewBuilderRoute();
   setRouteStatus("Yeni rota modu: durak eklemek için koordinat gir veya Haritadan Seç'e bas.");
 }
 
 function loadRouteIntoBuilder(route) {
   selectRoute(route.id);
   state.builderRouteId = route.id;
-  state.builderStops = route.stops.map((stop) => ({ ...stop, coords: Array.isArray(stop.coords) ? [...stop.coords] : null }));
+  state.builderStops = ensureCayyoluStart(route.stops.map(cloneStop));
   els.builderName.value = route.name;
   renderBuilderStops();
   setRouteStatus("Düzenleme modu: durak sırasını değiştir, yeni durak ekle ve kaydet.");
@@ -462,6 +469,8 @@ function renderBuilderStops() {
 }
 
 function previewBuilderRoute() {
+  state.builderStops = ensureCayyoluStart(state.builderStops);
+  renderBuilderStops();
   const route = buildRouteFromBuilder(false);
   if (!route) return;
 
@@ -497,7 +506,7 @@ function buildRouteFromBuilder(showErrors) {
     return null;
   }
 
-  const stops = state.builderStops.filter((stop) => Array.isArray(stop.coords));
+  const stops = ensureCayyoluStart(state.builderStops).filter((stop) => Array.isArray(stop.coords));
   if (stops.length < 2) {
     if (showErrors) setRouteStatus("Rota için en az 2 koordinatlı durak gerekli.");
     return null;
@@ -543,6 +552,10 @@ function clearBuilder() {
 }
 
 function getMapAppUrl(route) {
+  if (route.googleMapsUrl && !route.isCustom) {
+    return route.googleMapsUrl;
+  }
+
   const points = route.stops.filter((stop) => Array.isArray(stop.coords));
 
   if (points.length >= 2) {
@@ -635,6 +648,30 @@ function mergeStoredRoutes(staticRoutes) {
       .filter((stop) => Array.isArray(stop.coords))
       .map((stop) => stop.coords)
   }));
+}
+
+function ensureCayyoluStart(stops) {
+  const cleanedStops = stops
+    .filter((stop) => Array.isArray(stop.coords))
+    .map(cloneStop)
+    .filter((stop) => !isCayyoluStop(stop));
+
+  return [cloneStop(CAYYOLU_START), ...cleanedStops];
+}
+
+function cloneStop(stop) {
+  return {
+    ...stop,
+    coords: Array.isArray(stop.coords) ? [...stop.coords] : null
+  };
+}
+
+function isCayyoluStop(stop) {
+  if (!Array.isArray(stop.coords)) return false;
+
+  const [lat, lng] = stop.coords;
+  return Math.abs(lat - CAYYOLU_START.coords[0]) < 0.0005
+    && Math.abs(lng - CAYYOLU_START.coords[1]) < 0.0005;
 }
 
 function getStoredRoutes() {
