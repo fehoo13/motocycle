@@ -8,10 +8,10 @@
   <link rel="preconnect" href="https://unpkg.com">
   <link rel="preconnect" href="https://tile.openstreetmap.org">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-  <link rel="stylesheet" href="styles.css?v=20260611-custom-start">
+  <link rel="stylesheet" href="styles.css?v=20260611-geojson-map">
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
-  <script src="routes.js?v=20260611-custom-start" defer></script>
-  <script src="app.js?v=20260611-custom-start" defer></script>
+  <script src="routes.js?v=20260611-geojson-map" defer></script>
+  <script src="app.js?v=20260611-geojson-map" defer></script>
 </head>
 <body>
   <div class="app-shell">
@@ -58,7 +58,7 @@
           </div>
           <div class="map-toolbar-actions">
             <button class="button secondary small-button" id="fitRouteButton" type="button">Tüm Rotayı Göster</button>
-            <a class="button primary small-button" id="openMapAppLink" href="#" target="_blank" rel="noopener">Harita Uygulamasında Aç</a>
+            <button class="button primary small-button" id="openMapAppButton" type="button">Haritada Aç</button>
           </div>
         </div>
 
@@ -73,7 +73,7 @@
           <div class="panel-heading">
             <div>
               <p class="eyebrow">Rota oluştur</p>
-              <h2 id="builderTitle">Google Maps gibi durak ekle.</h2>
+              <h2 id="builderTitle">Harita üzerinde durak ekle.</h2>
             </div>
             <button class="icon-button" id="clearBuilder" type="button" aria-label="Formu temizle">×</button>
           </div>
@@ -104,8 +104,9 @@
           <div class="builder-actions">
             <button class="button primary" id="saveBuilderRoute" type="button">Rotayı Kaydet</button>
             <button class="button secondary" id="downloadSelectedKml" type="button">Seçili KML</button>
+            <button class="button secondary" id="downloadSelectedGeoJson" type="button">GeoJSON</button>
           </div>
-          <p class="helper-text">Yeni rotalar bu tarayıcıda kaydedilir. Kalıcı repo rotası yapmak için durakları `routes.js` içine ekleyebilirsin.</p>
+          <p class="helper-text">Yeni rotalar bu tarayıcıda kaydedilir. GeoJSON çıktısı GeoPandas ile uyumludur; kalıcı repo rotası yapmak için durakları `routes.js` içine ekleyebilirsin.</p>
         </section>
       </aside>
     </main>

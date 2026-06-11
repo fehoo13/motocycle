@@ -28,9 +28,10 @@ const els = {
   searchInput: document.querySelector("#searchInput"),
   difficultyFilter: document.querySelector("#difficultyFilter"),
   detailPanel: document.querySelector("#detailPanel"),
-  openMapAppLink: document.querySelector("#openMapAppLink"),
+  openMapAppButton: document.querySelector("#openMapAppButton"),
   fitRouteButton: document.querySelector("#fitRouteButton"),
   downloadSelectedKml: document.querySelector("#downloadSelectedKml"),
+  downloadSelectedGeoJson: document.querySelector("#downloadSelectedGeoJson"),
   downloadAllKml: document.querySelector("#downloadAllKml"),
   routeStatus: document.querySelector("#routeStatus"),
   streetMapButton: document.querySelector("#streetMapButton"),
@@ -60,7 +61,9 @@ function bindEvents() {
   els.searchInput.addEventListener("input", renderRouteList);
   els.difficultyFilter.addEventListener("change", renderRouteList);
   els.fitRouteButton.addEventListener("click", () => fitRoute(getSelectedRoute()));
+  els.openMapAppButton.addEventListener("click", () => focusSelectedRoute());
   els.downloadSelectedKml.addEventListener("click", () => downloadKml(getSelectedRoute()));
+  els.downloadSelectedGeoJson.addEventListener("click", () => downloadGeoJson(getSelectedRoute()));
   els.downloadAllKml.addEventListener("click", () => downloadKml(routes, "fehos-motocycle-road-routes.kml"));
   els.streetMapButton.addEventListener("click", () => setBaseLayer("street"));
   els.satelliteMapButton.addEventListener("click", () => setBaseLayer("satellite"));
@@ -79,7 +82,8 @@ function bindEvents() {
     if (!route) return;
 
     if (action === "map") {
-      window.open(getMapAppUrl(route), "_blank", "noopener");
+      selectRoute(route.id);
+      focusSelectedRoute();
       return;
     }
 
@@ -199,7 +203,7 @@ function renderRouteList() {
     <article class="route-card ${route.id === state.selectedRouteId ? "active" : ""}" data-route-id="${escapeHtml(route.id)}" tabindex="0">
       <div class="pill-row">
         ${route.isFavorite ? "<span class='pill favorite'>Favori</span>" : ""}
-        ${route.isPlaceholder ? "<span class='pill warning'>Koordinat bekliyor</span>" : ""}
+        ${route.isLinkRoute ? "<span class='pill'>Link kayıtlı</span>" : ""}
         ${route.isCustom ? "<span class='pill'>Benim rotam</span>" : ""}
       </div>
       <h3>${escapeHtml(route.name)}</h3>
@@ -207,12 +211,12 @@ function renderRouteList() {
       <div class="route-meta">
         <span>${formatDistance(route.distanceKm)}</span>
         <span>${formatNullableMinutes(route.rideMinutes, route.estimatedDuration)}</span>
-        <span>${route.stops.length || "Durak bekliyor"} durak</span>
+        <span>${route.stops.length ? `${route.stops.length} durak` : "Link rotası"}</span>
       </div>
       <div class="card-actions">
         <button class="button primary small-button" type="button" data-action="open">Aç</button>
         <button class="button secondary small-button" type="button" data-action="edit">Düzenle</button>
-        <button class="button secondary small-button" type="button" data-action="map">Harita</button>
+        <button class="button secondary small-button" type="button" data-action="map">Haritada Aç</button>
       </div>
     </article>
   `).join("");
@@ -234,7 +238,6 @@ function selectRoute(routeId) {
   if (!route) return;
 
   state.selectedRouteId = route.id;
-  els.openMapAppLink.href = getMapAppUrl(route);
   renderRouteList();
   renderDetails(route);
   drawRoute(route);
@@ -271,7 +274,7 @@ async function drawRoute(route) {
     return;
   }
 
-  setRouteStatus("Bu rota kısa link olarak duruyor. Durakları eklemek için Düzenle veya Yeni Rota kullan.");
+  setRouteStatus("Google Maps kaynak linki kayıtlı. Site içinde çizmek için Durakları Düzenle ile GeoJSON durakları ekle.");
   fitRoute(route);
 }
 
@@ -357,7 +360,7 @@ function renderDetails(route) {
     <div>
       <div class="pill-row">
         <span class="pill">${escapeHtml(titleCase(route.difficulty))}</span>
-        ${route.isPlaceholder ? "<span class='pill warning'>Koordinat bekliyor</span>" : ""}
+        ${route.isLinkRoute ? "<span class='pill'>Google link kaynağı</span>" : ""}
         ${route.isCustom ? "<span class='pill'>Benim rotam</span>" : ""}
       </div>
       <h2>${escapeHtml(route.name)}</h2>
@@ -368,13 +371,14 @@ function renderDetails(route) {
       ${detailMetric("Mesafe", formatDistance(route.distanceKm))}
       ${detailMetric("Sürüş", formatNullableMinutes(route.rideMinutes, route.estimatedDuration))}
       ${detailMetric("Mola", formatNullableMinutes(route.breakMinutes, "Planlanacak"))}
-      ${detailMetric("Durak", String(route.stops.length || "Bekliyor"))}
+      ${detailMetric("Durak", route.stops.length ? String(route.stops.length) : "Link rotası")}
     </div>
 
     <div class="card-actions">
       <button class="button primary small-button" type="button" onclick="window.FEHO_APP.editSelected()">Durakları Düzenle</button>
-      <a class="button secondary small-button" href="${escapeHtml(getMapAppUrl(route))}" target="_blank" rel="noopener">Harita Uygulaması</a>
+      <button class="button secondary small-button" type="button" onclick="window.FEHO_APP.focusSelected()">Haritada Aç</button>
       <button class="button secondary small-button" type="button" onclick="window.FEHO_APP.downloadSelected()">KML indir</button>
+      <button class="button secondary small-button" type="button" onclick="window.FEHO_APP.downloadSelectedGeoJson()">GeoJSON</button>
     </div>
 
     ${renderStops(route.stops)}
@@ -383,7 +387,7 @@ function renderDetails(route) {
 
 function renderStops(stops) {
   if (!stops.length) {
-    return "<div class='empty-state'>Bu rotada durak yok. Haritadan nokta seçerek veya koordinat girerek ekleyebilirsin.</div>";
+    return "<div class='empty-state'>Google Maps kaynak linki kayıtlı. Bu rotayı site içinde çizmek için Durakları Düzenle ile haritadan nokta seç veya koordinat gir.</div>";
   }
 
   return `
@@ -393,7 +397,7 @@ function renderStops(stops) {
           <span class="stop-number">${index + 1}</span>
           <div>
             <h4>${escapeHtml(stop.name)}</h4>
-            <p>${Array.isArray(stop.coords) ? `${stop.coords[0].toFixed(6)}, ${stop.coords[1].toFixed(6)}` : "Koordinat bekliyor"}</p>
+            <p>${Array.isArray(stop.coords) ? `${stop.coords[0].toFixed(6)}, ${stop.coords[1].toFixed(6)}` : "Koordinat yok"}</p>
           </div>
         </li>
       `).join("")}
@@ -507,6 +511,19 @@ function saveBuilderRoute() {
   setRouteStatus("Rota kaydedildi. Harita uygulamasında açabilir veya KML indirebilirsin.");
 }
 
+function focusSelectedRoute() {
+  const route = getSelectedRoute();
+  if (!route) return;
+
+  if (route.coordinates.length) {
+    fitRoute(route);
+    setRouteStatus("Rota site içindeki Leaflet/GeoJSON haritasında açıldı.");
+    return;
+  }
+
+  setRouteStatus("Bu rota kaynak link olarak kayıtlı. Site haritasında çizmek için önce durak ekle.");
+}
+
 function buildRouteFromBuilder(showErrors) {
   const name = els.builderName.value.trim();
 
@@ -563,24 +580,6 @@ function clearBuilder() {
   renderBuilderStops();
 }
 
-function getMapAppUrl(route) {
-  if (route.googleMapsUrl && !route.isCustom) {
-    return route.googleMapsUrl;
-  }
-
-  const points = route.stops.filter((stop) => Array.isArray(stop.coords));
-
-  if (points.length >= 2) {
-    const origin = points[0].coords.join(",");
-    const destination = points[points.length - 1].coords.join(",");
-    const waypoints = points.slice(1, -1).map((stop) => stop.coords.join(",")).join("|");
-    const waypointQuery = waypoints ? `&waypoints=${encodeURIComponent(waypoints)}` : "";
-    return `https://www.google.com/maps/dir/?api=1&travelmode=driving&origin=${encodeURIComponent(origin)}&destination=${encodeURIComponent(destination)}${waypointQuery}`;
-  }
-
-  return route.googleMapsUrl || "https://www.google.com/maps";
-}
-
 function downloadKml(routeOrRoutes, filename) {
   if (!routeOrRoutes) return;
 
@@ -597,6 +596,87 @@ function downloadKml(routeOrRoutes, filename) {
   link.click();
   link.remove();
   URL.revokeObjectURL(url);
+}
+
+function downloadGeoJson(routeOrRoutes, filename) {
+  if (!routeOrRoutes) return;
+
+  const selectedRoutes = Array.isArray(routeOrRoutes) ? routeOrRoutes : [routeOrRoutes];
+  const geojson = buildGeoJson(selectedRoutes);
+  const blob = new Blob([JSON.stringify(geojson, null, 2)], {
+    type: "application/geo+json;charset=utf-8"
+  });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename || `${slugify(selectedRoutes[0].name)}.geojson`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+
+function buildGeoJson(selectedRoutes) {
+  return {
+    type: "FeatureCollection",
+    name: "Feho's Motocycle Road",
+    features: selectedRoutes.flatMap(routeToGeoJsonFeatures)
+  };
+}
+
+function routeToGeoJsonFeatures(route) {
+  const features = [];
+  const lineCoordinates = getRouteLineCoordinates(route);
+
+  if (lineCoordinates.length > 1) {
+    features.push({
+      type: "Feature",
+      properties: {
+        id: route.id,
+        name: route.name,
+        kind: "route-line",
+        source: route.googleMapsUrl || "local",
+        difficulty: route.difficulty
+      },
+      geometry: {
+        type: "LineString",
+        coordinates: lineCoordinates.map(([lat, lng]) => [lng, lat])
+      }
+    });
+  } else {
+    features.push({
+      type: "Feature",
+      properties: {
+        id: route.id,
+        name: route.name,
+        kind: "source-link",
+        source: route.googleMapsUrl || "local",
+        difficulty: route.difficulty
+      },
+      geometry: null
+    });
+  }
+
+  route.stops
+    .filter((stop) => Array.isArray(stop.coords))
+    .forEach((stop, index) => {
+      features.push({
+        type: "Feature",
+        properties: {
+          routeId: route.id,
+          routeName: route.name,
+          stopIndex: index + 1,
+          name: stop.name,
+          kind: "stop"
+        },
+        geometry: {
+          type: "Point",
+          coordinates: [stop.coords[1], stop.coords[0]]
+        }
+      });
+    });
+
+  return features;
 }
 
 function buildKml(selectedRoutes) {
@@ -624,7 +704,7 @@ function routeToKml(route) {
       </Placemark>`
     : `
       <Placemark>
-        <name>${xml(route.name)} - koordinat bekliyor</name>
+        <name>${xml(route.name)} - koordinat yok</name>
         <description>${xml("Durak koordinatları eklenmeli. Harita linki: " + (route.googleMapsUrl || ""))}</description>
       </Placemark>`;
 
@@ -815,11 +895,16 @@ function xml(value) {
 
 window.FEHO_APP = {
   buildKml,
+  buildGeoJson,
+  focusSelected: focusSelectedRoute,
   editSelected() {
     const route = getSelectedRoute();
     if (route) loadRouteIntoBuilder(route);
   },
   downloadSelected() {
     downloadKml(getSelectedRoute());
+  },
+  downloadSelectedGeoJson() {
+    downloadGeoJson(getSelectedRoute());
   }
 };
