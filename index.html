@@ -8,15 +8,15 @@
   <link rel="preconnect" href="https://unpkg.com">
   <link rel="preconnect" href="https://tile.openstreetmap.org">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-  <link rel="stylesheet" href="styles.css?v=20260611-cayyolu-start">
+  <link rel="stylesheet" href="styles.css?v=20260611-cover-hero">
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
-  <script src="routes.js?v=20260611-cayyolu-start" defer></script>
-  <script src="app.js?v=20260611-cayyolu-start" defer></script>
+  <script src="routes.js?v=20260611-cover-hero" defer></script>
+  <script src="app.js?v=20260611-cover-hero" defer></script>
 </head>
 <body>
   <div class="app-shell">
     <header class="topbar">
-      <a class="brand" href="#planner" aria-label="Feho's Motocycle Road">
+      <a class="brand" href="#home" aria-label="Feho's Motocycle Road">
         <span class="brand-mark">FM</span>
         <span>Feho's Motocycle Road</span>
       </a>
@@ -25,6 +25,43 @@
         <button class="button primary small-button" id="downloadAllKml" type="button">Tüm KML</button>
       </div>
     </header>
+
+    <section class="cover-hero" id="home" aria-label="Feho's Motocycle Road kapak">
+      <div class="hero-copy">
+        <p class="eyebrow">Premium moto route planner</p>
+        <h1>Feho's Motocycle Road</h1>
+        <p class="hero-lede">Çayyolu çıkışlı rotaları, durakları ve harita katmanlarını tek yerde topla. Yola çıkmadan önce rotayı gör, düzenle, KML veya GeoJSON olarak indir.</p>
+        <div class="hero-actions">
+          <a class="button primary" href="#planner">Rotalara İn</a>
+          <a class="button secondary" href="#routeList">Rota Arşivi</a>
+        </div>
+        <div class="hero-stats" aria-label="Rota özeti">
+          <div>
+            <strong>9</strong>
+            <span>kayıtlı rota</span>
+          </div>
+          <div>
+            <strong>Çayyolu</strong>
+            <span>ortak çıkış</span>
+          </div>
+          <div>
+            <strong>KML</strong>
+            <span>indirilebilir</span>
+          </div>
+          <div>
+            <strong>GeoJSON</strong>
+            <span>GeoPandas uyumlu</span>
+          </div>
+        </div>
+      </div>
+
+      <figure class="hero-visual">
+        <div class="hero-frame">
+          <img src="assets/hero-cover.jpeg" alt="Sarı motosikletle sahil yolunda macera sürüşü illüstrasyonu">
+        </div>
+        <figcaption>Adventure mode on. Harita aşağıda, yol hazır.</figcaption>
+      </figure>
+    </section>
 
     <main class="planner-app" id="planner">
       <aside class="sidebar" aria-label="Rota paneli">
