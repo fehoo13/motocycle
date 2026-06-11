@@ -3,138 +3,112 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Feho's Motocycle Road, Leaflet tabanli interaktif motosiklet rota arsivi.">
+  <meta name="description" content="Feho's Motocycle Road, sade Leaflet tabanlı motosiklet rota planlayıcı.">
   <title>Feho's Motocycle Road</title>
   <link rel="preconnect" href="https://unpkg.com">
   <link rel="preconnect" href="https://tile.openstreetmap.org">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-  <link rel="stylesheet" href="styles.css?v=20260611-route-names">
+  <link rel="stylesheet" href="styles.css?v=20260611-planner-simple">
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
-  <script src="routes.js?v=20260611-route-names" defer></script>
-  <script src="app.js?v=20260611-route-names" defer></script>
+  <script src="routes.js?v=20260611-planner-simple" defer></script>
+  <script src="app.js?v=20260611-planner-simple" defer></script>
 </head>
 <body>
-  <div class="site-shell">
-    <nav class="nav" aria-label="Ana navigasyon">
-      <a class="brand" href="#top" aria-label="Feho's Motocycle Road ana sayfa">
+  <div class="app-shell">
+    <header class="topbar">
+      <a class="brand" href="#planner" aria-label="Feho's Motocycle Road">
         <span class="brand-mark">FM</span>
         <span>Feho's Motocycle Road</span>
       </a>
-      <div class="nav-links">
-        <a href="#routes">Routes</a>
-        <a href="#details">Journal</a>
-        <a href="#garage">Garage</a>
-      </div>
-    </nav>
-
-    <header class="hero" id="top">
-      <div class="hero-content">
-        <div class="hero-text">
-          <p class="eyebrow">Leaflet rota arsivi</p>
-          <h1>Feho's Motocycle Road</h1>
-          <p class="hero-copy">Ankara cikisli motosiklet rotalarini haritada sec, duraklari incele, Google Maps'te ac veya KML olarak indir.</p>
-          <div class="hero-actions" aria-label="Sayfa bolumleri">
-            <a class="button primary" href="#routes">Rotalari Ac</a>
-            <a class="button secondary" href="#details">Detay Paneli</a>
-          </div>
-        </div>
-        <figure class="hero-media" aria-label="Feho motosiklet macera kapak gorseli">
-          <img src="assets/hero-cover.jpeg" alt="Sahil rotasinda sari motosikletli macera surucusu illüstrasyonu">
-        </figure>
+      <div class="topbar-actions">
+        <button class="button secondary small-button" id="startNewRoute" type="button">Yeni Rota</button>
+        <button class="button primary small-button" id="downloadAllKml" type="button">Tüm KML</button>
       </div>
     </header>
 
-    <main>
-      <section class="section stats-section" aria-labelledby="stats-title">
-        <div class="section-inner">
-          <div class="section-title compact-title">
-            <p class="eyebrow">Rota paneli</p>
-            <h2 id="stats-title">Sürüş öncesi net tablo.</h2>
-            <p>Rotalar `routes.js` icinde duzenlenebilir veri objeleri olarak tutulur. Yeni rota eklemek icin ayni obje seklini kopyalamak yeterli.</p>
+    <main class="planner-app" id="planner">
+      <aside class="sidebar" aria-label="Rota paneli">
+        <section class="panel intro-panel">
+          <p class="eyebrow">Moto planner</p>
+          <h1>Rotalar sade. Harita büyük. Aksiyon net.</h1>
+          <p>Rotayı seç, durakları düzenle, harita uygulamasında aç veya KML indir.</p>
+        </section>
+
+        <section class="panel controls-panel" aria-label="Rota arama">
+          <label class="field">
+            <span>Rota ara</span>
+            <input id="searchInput" type="search" placeholder="ROTA-1, Ayaş, Karagöl...">
+          </label>
+          <label class="field">
+            <span>Zorluk</span>
+            <select id="difficultyFilter">
+              <option value="all">Tüm zorluklar</option>
+            </select>
+          </label>
+        </section>
+
+        <section class="route-list" id="routeList" aria-label="Rota listesi"></section>
+      </aside>
+
+      <section class="map-stage" aria-label="Rota haritası">
+        <div class="map-toolbar">
+          <div class="segmented" aria-label="Harita tipi">
+            <button class="segment active" id="streetMapButton" type="button">Street</button>
+            <button class="segment" id="satelliteMapButton" type="button">Satellite</button>
           </div>
-          <div class="stats-grid" id="statsGrid" aria-live="polite"></div>
+          <div class="map-toolbar-actions">
+            <button class="button secondary small-button" id="fitRouteButton" type="button">Tüm Rotayı Göster</button>
+            <a class="button primary small-button" id="openMapAppLink" href="#" target="_blank" rel="noopener">Harita Uygulamasında Aç</a>
+          </div>
         </div>
+
+        <div id="map"></div>
+        <p class="route-status" id="routeStatus" aria-live="polite"></p>
       </section>
 
-      <section class="section routes-section" id="routes" aria-labelledby="routes-title">
-        <div class="section-inner wide">
-          <div class="section-title routes-heading">
+      <aside class="editor" aria-label="Rota detay ve düzenleme">
+        <section class="panel detail-panel" id="detailPanel" aria-live="polite"></section>
+
+        <section class="panel builder-panel" aria-labelledby="builderTitle">
+          <div class="panel-heading">
             <div>
-              <p class="eyebrow">Interaktif harita</p>
-              <h2 id="routes-title">Motosiklet rota arsivi.</h2>
-              <p>Rota kartina tikla, haritada cizgiyi ve numarali duraklari gor. Koordinati eksik rotalar placeholder olarak listelenir ve kolayca tamamlanabilir.</p>
+              <p class="eyebrow">Rota oluştur</p>
+              <h2 id="builderTitle">Google Maps gibi durak ekle.</h2>
             </div>
-            <button class="button secondary small-button" id="downloadAllKml" type="button">Tüm KML indir</button>
+            <button class="icon-button" id="clearBuilder" type="button" aria-label="Formu temizle">×</button>
           </div>
 
-          <div class="planner-shell">
-            <aside class="route-sidebar" aria-label="Rota listesi ve filtreler">
-              <div class="filters">
-                <label class="field">
-                  <span>Arama</span>
-                  <input id="searchInput" type="search" placeholder="Rota, durak veya not ara">
-                </label>
-                <label class="field">
-                  <span>Zorluk</span>
-                  <select id="difficultyFilter">
-                    <option value="all">Tüm zorluklar</option>
-                  </select>
-                </label>
-              </div>
-              <div class="route-list" id="routeList"></div>
-            </aside>
+          <label class="field">
+            <span>Rota adı</span>
+            <input id="builderName" type="text" placeholder="ROTA-10 - Ankara - ...">
+          </label>
 
-            <section class="map-panel" aria-label="Leaflet rota haritasi">
-              <div id="map"></div>
-              <div class="map-actions">
-                <button class="button primary small-button" id="showFullRoute" type="button">Tüm Rotayı Göster</button>
-                <a class="button secondary small-button" id="selectedGoogleLink" href="#" target="_blank" rel="noopener">Google Maps</a>
-                <button class="button secondary small-button" id="downloadSelectedKml" type="button">KML indir</button>
-              </div>
-              <p class="route-status" id="routeStatus" aria-live="polite"></p>
-            </section>
+          <div class="builder-grid">
+            <label class="field">
+              <span>Durak adı</span>
+              <input id="stopName" type="text" placeholder="Kahve molası">
+            </label>
+            <label class="field">
+              <span>Koordinat</span>
+              <input id="stopCoords" type="text" placeholder="39.8820606, 32.6893723">
+            </label>
           </div>
-        </div>
-      </section>
 
-      <section class="section details-section" id="details" aria-labelledby="details-title">
-        <div class="section-inner wide">
-          <div class="section-title compact-title">
-            <p class="eyebrow">Journal</p>
-            <h2 id="details-title">Secili rota detayi.</h2>
-            <p>Duraklar, risk notlari, kahve/yemek/fotograf noktalarini tek panelde oku.</p>
+          <div class="builder-actions">
+            <button class="button secondary small-button" id="pickOnMap" type="button">Haritadan Seç</button>
+            <button class="button primary small-button" id="addStop" type="button">Durak Ekle</button>
           </div>
-          <article class="detail-panel" id="detailPanel" aria-live="polite"></article>
-        </div>
-      </section>
 
-      <section class="section garage-section" id="garage" aria-labelledby="garage-title">
-        <div class="section-inner">
-          <div class="section-title compact-title">
-            <p class="eyebrow">Garage</p>
-            <h2 id="garage-title">Dosya ve veri notlari.</h2>
-            <p>Rota verileri statik dosyada tutulur, backend yoktur. KML indirme tarayicida uretilir ve GitHub Pages uzerinde dogrudan calisir.</p>
+          <ol class="builder-stops" id="builderStops"></ol>
+
+          <div class="builder-actions">
+            <button class="button primary" id="saveBuilderRoute" type="button">Rotayı Kaydet</button>
+            <button class="button secondary" id="downloadSelectedKml" type="button">Seçili KML</button>
           </div>
-          <div class="garage-grid">
-            <article class="note">
-              <h3>Yeni rota ekleme</h3>
-              <p>`routes.js` icinde bir rota objesi kopyala, `id`, `name`, `stops`, `coordinates` ve `googleMapsUrl` alanlarini doldur.</p>
-            </article>
-            <article class="note">
-              <h3>Eksik koordinatlar</h3>
-              <p>Kisa Google Maps linklerinden otomatik koordinat cekilmez. Eksik rotalar placeholder olarak isaretlendi; koordinatlar manuel tamamlanmali.</p>
-            </article>
-          </div>
-        </div>
-      </section>
+          <p class="helper-text">Yeni rotalar bu tarayıcıda kaydedilir. Kalıcı repo rotası yapmak için durakları `routes.js` içine ekleyebilirsin.</p>
+        </section>
+      </aside>
     </main>
-
-    <footer class="footer">
-      <div class="footer-inner">
-        <strong>Feho's Motocycle Road</strong>
-        <span>Leaflet, GitHub Pages ve statik KML indirme ile hazirlandi.</span>
-      </div>
-    </footer>
   </div>
 </body>
 </html>
