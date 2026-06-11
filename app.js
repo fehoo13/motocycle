@@ -508,7 +508,7 @@ function saveBuilderRoute() {
   populateDifficultyFilterReset();
   renderRouteList();
   selectRoute(route.id);
-  setRouteStatus("Rota kaydedildi. Harita uygulamasında açabilir veya KML indirebilirsin.");
+  setRouteStatus("Rota kaydedildi. Haritada açabilir veya KML indirebilirsin.");
 }
 
 function focusSelectedRoute() {
