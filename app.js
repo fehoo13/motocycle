@@ -1,10 +1,11 @@
-const routes = window.FEHO_ROUTES || [];
+﻿const routes = window.FEHO_ROUTES || [];
 
 const state = {
   selectedRouteId: routes.find((route) => route.coordinates.length)?.id || routes[0]?.id,
   routeLine: null,
   markerLayer: null,
-  map: null
+  map: null,
+  routeRequestId: 0
 };
 
 const els = {
@@ -17,7 +18,8 @@ const els = {
   selectedGoogleLink: document.querySelector("#selectedGoogleLink"),
   showFullRoute: document.querySelector("#showFullRoute"),
   downloadSelectedKml: document.querySelector("#downloadSelectedKml"),
-  downloadAllKml: document.querySelector("#downloadAllKml")
+  downloadAllKml: document.querySelector("#downloadAllKml"),
+  routeStatus: document.querySelector("#routeStatus")
 };
 
 document.addEventListener("DOMContentLoaded", init);
@@ -94,7 +96,7 @@ function appendOptions(select, values) {
 
 function initMap() {
   if (!window.L) {
-    document.querySelector("#map").innerHTML = "<div class='empty-state'>Leaflet yüklenemedi. İnternet bağlantısını veya CDN erişimini kontrol et.</div>";
+    document.querySelector("#map").innerHTML = "<div class='empty-state'>Leaflet yÃ¼klenemedi. Ä°nternet baÄŸlantÄ±sÄ±nÄ± veya CDN eriÅŸimini kontrol et.</div>";
     return;
   }
 
@@ -118,7 +120,7 @@ function initMap() {
     attribution: "Tiles &copy; Esri"
   });
 
-  // Google tile denemeleri API/servis koşullarına takılabilir; bu yüzden varsayılan katmanda kullanılmadı.
+  // Google tile denemeleri API/servis koÅŸullarÄ±na takÄ±labilir; bu yÃ¼zden varsayÄ±lan katmanda kullanÄ±lmadÄ±.
   // const googleRoad = L.tileLayer("https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}", { subdomains: ["mt0", "mt1", "mt2", "mt3"] });
   // const googleSatellite = L.tileLayer("https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}", { subdomains: ["mt0", "mt1", "mt2", "mt3"] });
   // const googleHybrid = L.tileLayer("https://{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}", { subdomains: ["mt0", "mt1", "mt2", "mt3"] });
@@ -135,6 +137,7 @@ function initMap() {
 
 function renderStats() {
   const totalKm = routes.reduce((sum, route) => sum + (Number(route.distanceKm) || 0), 0);
+  const uniqueLinkCount = unique(routes.map((route) => normalizeUrl(route.googleMapsUrl))).length;
   const timedRoutes = routes.filter((route) => Number(route.rideMinutes));
   const avgRide = timedRoutes.length
     ? Math.round(timedRoutes.reduce((sum, route) => sum + route.rideMinutes, 0) / timedRoutes.length)
@@ -142,9 +145,9 @@ function renderStats() {
   const favoriteStops = routes.reduce((sum, route) => sum + route.stops.filter((stop) => stop.favorite).length, 0);
 
   const stats = [
-    { value: routes.length, label: "Toplam rota kaydı" },
+    { value: `${routes.length} / ${uniqueLinkCount}`, label: "Rota kaydı / benzersiz link" },
     { value: `${totalKm} km`, label: "Girilen toplam mesafe" },
-    { value: avgRide ? formatMinutes(avgRide) : "Planlanıyor", label: "Ortalama sürüş süresi" },
+    { value: avgRide ? formatMinutes(avgRide) : "PlanlanÄ±yor", label: "Ortalama sÃ¼rÃ¼ÅŸ sÃ¼resi" },
     { value: favoriteStops, label: "Favori durak" }
   ];
 
@@ -160,7 +163,7 @@ function renderRouteList() {
   const filteredRoutes = getFilteredRoutes();
 
   if (!filteredRoutes.length) {
-    els.routeList.innerHTML = "<div class='empty-state'>Bu filtrelerle rota bulunamadı.</div>";
+    els.routeList.innerHTML = "<div class='empty-state'>Bu filtrelerle rota bulunamadÄ±.</div>";
     return;
   }
 
@@ -172,6 +175,7 @@ function renderRouteList() {
             <span class="pill">${escapeHtml(titleCase(route.category))}</span>
             ${route.isFavorite ? "<span class='pill favorite'>Favori</span>" : ""}
             ${route.isPlaceholder ? "<span class='pill warning'>Koordinat bekliyor</span>" : ""}
+            ${getDuplicateLinkCount(route) > 1 ? "<span class='pill warning'>Aynı link</span>" : ""}
           </div>
           <h3>${escapeHtml(route.name)}</h3>
         </div>
@@ -179,7 +183,7 @@ function renderRouteList() {
       <p>${escapeHtml(route.description)}</p>
       <div class="route-meta">
         <span>Mesafe: ${formatDistance(route.distanceKm)}</span>
-        <span>Sürüş: ${formatNullableMinutes(route.rideMinutes, route.estimatedDuration)}</span>
+        <span>SÃ¼rÃ¼ÅŸ: ${formatNullableMinutes(route.rideMinutes, route.estimatedDuration)}</span>
         <span>Mola: ${formatNullableMinutes(route.breakMinutes, "Planlanacak")}</span>
         <span>Toplam: ${formatNullableMinutes(route.totalMinutes, "Planlanacak")}</span>
         <span>Durak: ${route.stops.length || "Bekliyor"}</span>
@@ -188,9 +192,9 @@ function renderRouteList() {
         ${renderMiniTimeline(route)}
       </div>
       <p><strong>Yol:</strong> ${escapeHtml(route.roadCharacter)}</p>
-      <p><strong>Yakıt/servis:</strong> ${escapeHtml(route.fuelServiceNote)}</p>
+      <p><strong>YakÄ±t/servis:</strong> ${escapeHtml(route.fuelServiceNote)}</p>
       <div class="card-actions">
-        <button class="button primary small-button" type="button" data-action="open">Rotayı Aç</button>
+        <button class="button primary small-button" type="button" data-action="open">RotayÄ± AÃ§</button>
         <button class="button secondary small-button" type="button" data-action="google">Google Maps</button>
         <button class="button secondary small-button" type="button" data-action="details">Detaylar</button>
         <button class="button secondary small-button" type="button" data-action="kml">KML indir</button>
@@ -223,8 +227,10 @@ function selectRoute(routeId) {
   drawRoute(route);
 }
 
-function drawRoute(route) {
+async function drawRoute(route) {
   if (!state.map || !window.L) return;
+
+  const requestId = ++state.routeRequestId;
 
   if (state.routeLine) {
     state.routeLine.remove();
@@ -235,15 +241,35 @@ function drawRoute(route) {
 
   const stopsWithCoords = route.stops.filter((stop) => Array.isArray(stop.coords));
 
+  addStopMarkers(stopsWithCoords);
+
   if (route.coordinates.length > 1) {
-    state.routeLine = L.polyline(route.coordinates, {
-      color: "#f2a33a",
-      weight: 6,
-      opacity: 0.95,
-      lineJoin: "round"
-    }).addTo(state.map);
+    setRouteStatus("Yol çizgisi hesaplanıyor...");
+
+    try {
+      const roadCoordinates = await fetchRoadGeometry(route.coordinates);
+      if (requestId !== state.routeRequestId) return;
+
+      route.roadGeometry = roadCoordinates;
+      state.routeLine = drawRouteLine(roadCoordinates, false);
+      setRouteStatus("Rota çizgisi OSRM ile yol ağına oturtuldu. Google Maps linki asıl rota referansıdır.");
+    } catch (error) {
+      if (requestId !== state.routeRequestId) return;
+
+      route.roadGeometry = null;
+      state.routeLine = drawRouteLine(route.coordinates, true);
+      setRouteStatus("Yol servisi cevap vermedi; geçici düz çizgi gösteriliyor. Google Maps butonu asıl rota referansıdır.");
+    }
+
+    fitRoute(route);
+    return;
   }
 
+  setRouteStatus("Bu rota için durak koordinatları bekleniyor; Google Maps linki arşivde tutuluyor.");
+  fitRoute(route);
+}
+
+function addStopMarkers(stopsWithCoords) {
   stopsWithCoords.forEach((stop, index) => {
     const marker = L.marker(stop.coords, {
       icon: L.divIcon({
@@ -257,19 +283,17 @@ function drawRoute(route) {
     marker.bindPopup(`
       <strong>${escapeHtml(stop.name)}</strong><br>
       ${escapeHtml(stop.description || stop.note || "")}<br>
-      <small>${stop.coords[0].toFixed(6)}, ${stop.coords[1].toFixed(6)}${stop.approximate ? " · yaklaşık" : ""}</small>
+      <small>${stop.coords[0].toFixed(6)}, ${stop.coords[1].toFixed(6)}${stop.approximate ? " Â· yaklaÅŸÄ±k" : ""}</small>
     `);
 
     state.markerLayer.addLayer(marker);
   });
-
-  fitRoute(route);
 }
 
 function fitRoute(route) {
   if (!state.map || !window.L) return;
 
-  const points = route.coordinates;
+  const points = getRouteLineCoordinates(route);
   if (points.length > 1) {
     state.map.fitBounds(L.latLngBounds(points), { padding: [36, 36], maxZoom: 12 });
     return;
@@ -281,6 +305,48 @@ function fitRoute(route) {
   }
 
   state.map.setView([39.93, 32.85], 8);
+}
+
+function drawRouteLine(coordinates, isFallback) {
+  return L.polyline(coordinates, {
+    color: isFallback ? "#d96f55" : "#f2a33a",
+    weight: isFallback ? 4 : 6,
+    opacity: 0.95,
+    lineJoin: "round",
+    dashArray: isFallback ? "10 10" : null
+  }).addTo(state.map);
+}
+
+async function fetchRoadGeometry(coordinates) {
+  const waypointText = coordinates.map(([lat, lng]) => `${lng},${lat}`).join(";");
+  const radiuses = coordinates.map(() => "5000").join(";");
+  const url = `https://router.project-osrm.org/route/v1/driving/${waypointText}?overview=full&geometries=geojson&steps=false&continue_straight=false&radiuses=${radiuses}`;
+  const response = await fetch(url);
+
+  if (!response.ok) {
+    throw new Error(`OSRM ${response.status}`);
+  }
+
+  const data = await response.json();
+  const geometry = data.routes?.[0]?.geometry?.coordinates;
+
+  if (!Array.isArray(geometry) || geometry.length < 2) {
+    throw new Error("OSRM geometry missing");
+  }
+
+  return geometry.map(([lng, lat]) => [lat, lng]);
+}
+
+function getRouteLineCoordinates(route) {
+  return Array.isArray(route.roadGeometry) && route.roadGeometry.length > 1
+    ? route.roadGeometry
+    : route.coordinates;
+}
+
+function setRouteStatus(message) {
+  if (els.routeStatus) {
+    els.routeStatus.textContent = message;
+  }
 }
 
 function renderDetails(route) {
@@ -300,27 +366,27 @@ function renderDetails(route) {
 
     <div class="detail-grid">
       ${detailMetric("Mesafe", formatDistance(route.distanceKm))}
-      ${detailMetric("Sürüş", formatNullableMinutes(route.rideMinutes, route.estimatedDuration))}
+      ${detailMetric("SÃ¼rÃ¼ÅŸ", formatNullableMinutes(route.rideMinutes, route.estimatedDuration))}
       ${detailMetric("Mola", formatNullableMinutes(route.breakMinutes, "Planlanacak"))}
       ${detailMetric("Toplam", formatNullableMinutes(route.totalMinutes, "Planlanacak"))}
     </div>
 
     <div class="advice-grid">
-      ${adviceCard("Başlangıç / Bitiş", `${route.startPoint} → ${route.endPoint}`)}
-      ${adviceCard("Önerilen mevsim", route.recommendedSeason)}
-      ${adviceCard("Sürüş tavsiyesi", route.rideAdvice)}
-      ${adviceCard("Risk / uyarı", route.riskWarnings)}
-      ${adviceCard("Kahve / yemek / fotoğraf", route.coffeeFoodPhoto)}
+      ${adviceCard("BaÅŸlangÄ±Ã§ / BitiÅŸ", `${route.startPoint} â†’ ${route.endPoint}`)}
+      ${adviceCard("Ã–nerilen mevsim", route.recommendedSeason)}
+      ${adviceCard("SÃ¼rÃ¼ÅŸ tavsiyesi", route.rideAdvice)}
+      ${adviceCard("Risk / uyarÄ±", route.riskWarnings)}
+      ${adviceCard("Kahve / yemek / fotoÄŸraf", route.coffeeFoodPhoto)}
       ${adviceCard("Notlar", route.notes.join(" "))}
     </div>
 
     <div>
       <h4>Durak timeline</h4>
-      ${hasStops ? renderStops(route.stops) : "<div class='empty-state'>Bu rota için durak koordinatları henüz eklenmedi. `routes.js` içinde stops alanını doldurunca harita ve KML otomatik oluşur.</div>"}
+      ${hasStops ? renderStops(route.stops) : "<div class='empty-state'>Bu rota iÃ§in durak koordinatlarÄ± henÃ¼z eklenmedi. `routes.js` iÃ§inde stops alanÄ±nÄ± doldurunca harita ve KML otomatik oluÅŸur.</div>"}
     </div>
 
     <div class="detail-actions">
-      <a class="button primary" href="${escapeHtml(route.googleMapsUrl)}" target="_blank" rel="noopener">Google Maps'te Aç</a>
+      <a class="button primary" href="${escapeHtml(route.googleMapsUrl)}" target="_blank" rel="noopener">Google Maps'te AÃ§</a>
       <button class="button secondary" type="button" onclick="window.FEHO_APP.downloadSelected()">KML indir</button>
     </div>
   `;
@@ -335,7 +401,7 @@ function renderStops(stops) {
           <div>
             <h4>${escapeHtml(stop.name)}</h4>
             <p>${escapeHtml(stop.note || stop.description || "")}</p>
-            <p>${Array.isArray(stop.coords) ? `${stop.coords[0].toFixed(6)}, ${stop.coords[1].toFixed(6)}${stop.approximate ? " · yaklaşık koordinat" : ""}` : "Koordinat bekliyor"}</p>
+            <p>${Array.isArray(stop.coords) ? `${stop.coords[0].toFixed(6)}, ${stop.coords[1].toFixed(6)}${stop.approximate ? " Â· yaklaÅŸÄ±k koordinat" : ""}` : "Koordinat bekliyor"}</p>
           </div>
         </li>
       `).join("")}
@@ -394,21 +460,22 @@ function buildKml(selectedRoutes) {
 }
 
 function routeToKml(route) {
-  const line = route.coordinates.length > 1
+  const lineCoordinates = getRouteLineCoordinates(route);
+  const line = lineCoordinates.length > 1
     ? `
       <Placemark>
-        <name>${xml(route.name)} - rota çizgisi</name>
+        <name>${xml(route.name)} - rota Ã§izgisi</name>
         <description>${xml(route.description)}</description>
         <Style><LineStyle><color>ff3aa3f2</color><width>5</width></LineStyle></Style>
         <LineString>
           <tessellate>1</tessellate>
-          <coordinates>${route.coordinates.map(([lat, lng]) => `${lng},${lat},0`).join(" ")}</coordinates>
+          <coordinates>${lineCoordinates.map(([lat, lng]) => `${lng},${lat},0`).join(" ")}</coordinates>
         </LineString>
       </Placemark>`
     : `
       <Placemark>
         <name>${xml(route.name)} - koordinat bekliyor</name>
-        <description>${xml("Bu rota kısa link olarak arşivlendi; durak koordinatları routes.js içinde manuel tamamlanmalı. Google Maps: " + route.googleMapsUrl)}</description>
+        <description>${xml("Bu rota kÄ±sa link olarak arÅŸivlendi; durak koordinatlarÄ± routes.js iÃ§inde manuel tamamlanmalÄ±. Google Maps: " + route.googleMapsUrl)}</description>
       </Placemark>`;
 
   const stops = route.stops
@@ -416,7 +483,7 @@ function routeToKml(route) {
     .map((stop, index) => `
       <Placemark>
         <name>${index + 1}. ${xml(stop.name)}</name>
-        <description>${xml(`${stop.description || ""} ${stop.note || ""}${stop.approximate ? " Yaklaşık koordinat." : ""}`.trim())}</description>
+        <description>${xml(`${stop.description || ""} ${stop.note || ""}${stop.approximate ? " YaklaÅŸÄ±k koordinat." : ""}`.trim())}</description>
         <Point><coordinates>${stop.coords[1]},${stop.coords[0]},0</coordinates></Point>
       </Placemark>`)
     .join("\n");
@@ -437,6 +504,11 @@ function getRoute(routeId) {
   return routes.find((route) => route.id === routeId);
 }
 
+function getDuplicateLinkCount(route) {
+  const url = normalizeUrl(route.googleMapsUrl);
+  return routes.filter((item) => normalizeUrl(item.googleMapsUrl) === url).length;
+}
+
 function getSearchText(route) {
   return [
     route.name,
@@ -454,6 +526,10 @@ function getSearchText(route) {
 
 function unique(values) {
   return [...new Set(values.filter(Boolean))].sort((a, b) => a.localeCompare(b, "tr"));
+}
+
+function normalizeUrl(url) {
+  return String(url || "").replace(/\?.*$/, "").trim();
 }
 
 function formatDistance(value) {
@@ -482,12 +558,12 @@ function titleCase(value) {
 function slugify(value) {
   return value
     .toLocaleLowerCase("tr")
-    .replace(/ğ/g, "g")
-    .replace(/ü/g, "u")
-    .replace(/ş/g, "s")
-    .replace(/ı/g, "i")
-    .replace(/ö/g, "o")
-    .replace(/ç/g, "c")
+    .replace(/ÄŸ/g, "g")
+    .replace(/Ã¼/g, "u")
+    .replace(/ÅŸ/g, "s")
+    .replace(/Ä±/g, "i")
+    .replace(/Ã¶/g, "o")
+    .replace(/Ã§/g, "c")
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/(^-|-$)/g, "");
 }
@@ -513,3 +589,4 @@ window.FEHO_APP = {
     if (route) downloadKml(route);
   }
 };
+
