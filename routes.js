@@ -7,7 +7,7 @@ window.FEHO_ROUTES = [
     id: "ankara-camkoru-beypazari-loop",
     name: "ROTA-1 - Ankara - Kızılcahamam - Çamkoru - Beypazarı",
     description: "Ankara çıkışlı, orman yolları, yayla havası ve Beypazarı dönüş keyfini tek güne sığdıran uzun premium tur.",
-    startPoint: "Başlangıç / Ankara batı çıkışı",
+    startPoint: "Çayyolu / Başlangıç",
     endPoint: "Raci Bademli Parkı / Ankara dönüş",
     distanceKm: 360,
     estimatedDuration: "5 sa 30 dk sürüş",
@@ -30,8 +30,8 @@ window.FEHO_ROUTES = [
     coffeeFoodPhoto: "Kızılcahamam kahve molası, Çamkoru orman fotoğrafı, Beypazarı yemek/dinlenme molası.",
     stops: [
       {
-        name: "Başlangıç / Ankara",
-        description: "Kullanıcının verdiği başlangıç koordinatı.",
+        name: "Çayyolu / Başlangıç",
+        description: "Her rota için 1 numaralı başlangıç noktası.",
         note: "Depo, lastik basıncı ve zincir kontrolü için son sakin nokta.",
         coords: [39.8820606, 32.6893723],
         favorite: true
@@ -105,7 +105,7 @@ window.FEHO_ROUTES = [
     id: "ayas-gudul-karagol-yayla",
     name: "ROTA-2 - Ankara - Ayaş - Güdül - Karagöl",
     description: "Göletler, kamp noktaları ve kuzey Ankara yaylalarını bağlayan uzun, keşif hissi yüksek rota.",
-    startPoint: "Başlangıç / Ankara batı çıkışı",
+    startPoint: "Çayyolu / Başlangıç",
     endPoint: "Yıldırım Elören Köyü Yaylası",
     distanceKm: 330,
     estimatedDuration: "5 sa sürüş",
@@ -128,8 +128,8 @@ window.FEHO_ROUTES = [
     coffeeFoodPhoto: "Ayaş kısa kahve, No9 Camping dinlenme, Karagöl fotoğraf ve Yıldırım Elören yayla gün batımı.",
     stops: [
       {
-        name: "Başlangıç / Ankara",
-        description: "Kullanıcının verdiği başlangıç koordinatı.",
+        name: "Çayyolu / Başlangıç",
+        description: "Her rota için 1 numaralı başlangıç noktası.",
         note: "Uzun rota için depo tam başlamak iyi olur.",
         coords: [39.8820631, 32.6892643],
         favorite: true
