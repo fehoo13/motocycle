@@ -2,6 +2,17 @@
 // Yeni rota eklemek için bu listedeki bir objeyi kopyala, id/name/stops/coordinates alanlarını doldur.
 // Google Maps kısa linklerinden otomatik koordinat çekilmez; yaklaşık yazılan noktalar `approximate: true` ile işaretlendi.
 
+const CAYYOLU_START_POINT = "Çayyolu / Başlangıç";
+
+function createCayyoluStartStop() {
+  return {
+    name: CAYYOLU_START_POINT,
+    description: "Mevcut rota arşivinin ortak çıkış noktası.",
+    coords: [39.8820606, 32.6893723],
+    note: "Google Maps kaynak linki bu noktadan devam edecek şekilde düzenlenebilir."
+  };
+}
+
 window.FEHO_ROUTES = [
   {
     id: "ankara-camkoru-beypazari-loop",
@@ -207,7 +218,7 @@ window.FEHO_ROUTES = [
     id: "shortlink-srgczrt5",
     name: "ROTA-3 - Google Maps Link Rotası",
     description: "Google Maps kısa linki kayıtlı; bu rota uygulama içinde durak eklenerek düzenlenebilir.",
-    startPoint: "Planlanacak",
+    startPoint: CAYYOLU_START_POINT,
     endPoint: "Planlanacak",
     distanceKm: null,
     estimatedDuration: "Planlanacak",
@@ -225,13 +236,13 @@ window.FEHO_ROUTES = [
     rideAdvice: "Uygulama içinde durak ekleyerek GeoJSON/KML rotası oluştur.",
     riskWarnings: "Risk notları manuel keşif sonrası yazılacak.",
     coffeeFoodPhoto: "Kahve, yemek ve fotoğraf noktaları eklenecek.",
-    stops: []
+    stops: [createCayyoluStartStop()]
   },
   {
     id: "shortlink-4snox352",
     name: "ROTA-4 - Google Maps Link Rotası",
     description: "Google Maps kısa linki kayıtlı; rota uygulama içinde düzenlenebilir.",
-    startPoint: "Planlanacak",
+    startPoint: CAYYOLU_START_POINT,
     endPoint: "Planlanacak",
     distanceKm: null,
     estimatedDuration: "Planlanacak",
@@ -249,13 +260,13 @@ window.FEHO_ROUTES = [
     rideAdvice: "Uygulama içinde durak ekleyerek GeoJSON/KML rotası oluştur.",
     riskWarnings: "Yol riski henüz girilmedi.",
     coffeeFoodPhoto: "Keşif noktaları eklenecek.",
-    stops: []
+    stops: [createCayyoluStartStop()]
   },
   {
     id: "shortlink-usqazh6",
     name: "ROTA-5 - Google Maps Link Rotası",
     description: "Google Maps kısa linki kayıtlı; rota uygulama içinde düzenlenebilir.",
-    startPoint: "Planlanacak",
+    startPoint: CAYYOLU_START_POINT,
     endPoint: "Planlanacak",
     distanceKm: null,
     estimatedDuration: "Planlanacak",
@@ -273,13 +284,13 @@ window.FEHO_ROUTES = [
     rideAdvice: "Uygulama içinde durak ekleyerek GeoJSON/KML rotası oluştur.",
     riskWarnings: "Planlanacak.",
     coffeeFoodPhoto: "Planlanacak.",
-    stops: []
+    stops: [createCayyoluStartStop()]
   },
   {
     id: "shortlink-ergphj3-06",
     name: "ROTA-6 - Google Maps Link Rotası",
     description: "Google Maps kısa linki kayıtlı; rota uygulama içinde düzenlenebilir.",
-    startPoint: "Planlanacak",
+    startPoint: CAYYOLU_START_POINT,
     endPoint: "Planlanacak",
     distanceKm: null,
     estimatedDuration: "Planlanacak",
@@ -297,13 +308,13 @@ window.FEHO_ROUTES = [
     rideAdvice: "Uygulama içinde durak ekleyerek GeoJSON/KML rotası oluştur.",
     riskWarnings: "Planlanacak.",
     coffeeFoodPhoto: "Planlanacak.",
-    stops: []
+    stops: [createCayyoluStartStop()]
   },
   {
     id: "shortlink-r6hys8",
     name: "ROTA-7 - Google Maps Link Rotası",
     description: "Google Maps kısa linki kayıtlı; rota uygulama içinde düzenlenebilir.",
-    startPoint: "Planlanacak",
+    startPoint: CAYYOLU_START_POINT,
     endPoint: "Planlanacak",
     distanceKm: null,
     estimatedDuration: "Planlanacak",
@@ -321,13 +332,13 @@ window.FEHO_ROUTES = [
     rideAdvice: "Uygulama içinde durak ekleyerek GeoJSON/KML rotası oluştur.",
     riskWarnings: "Planlanacak.",
     coffeeFoodPhoto: "Planlanacak.",
-    stops: []
+    stops: [createCayyoluStartStop()]
   },
   {
     id: "shortlink-hldd8",
     name: "ROTA-8 - Google Maps Link Rotası",
     description: "Google Maps kısa linki kayıtlı; rota uygulama içinde düzenlenebilir.",
-    startPoint: "Planlanacak",
+    startPoint: CAYYOLU_START_POINT,
     endPoint: "Planlanacak",
     distanceKm: null,
     estimatedDuration: "Planlanacak",
@@ -345,13 +356,13 @@ window.FEHO_ROUTES = [
     rideAdvice: "Uygulama içinde durak ekleyerek GeoJSON/KML rotası oluştur.",
     riskWarnings: "Planlanacak.",
     coffeeFoodPhoto: "Planlanacak.",
-    stops: []
+    stops: [createCayyoluStartStop()]
   },
   {
     id: "shortlink-b3f4v",
     name: "ROTA-9 - Google Maps Link Rotası",
     description: "Google Maps kısa linki kayıtlı; rota uygulama içinde düzenlenebilir.",
-    startPoint: "Planlanacak",
+    startPoint: CAYYOLU_START_POINT,
     endPoint: "Planlanacak",
     distanceKm: null,
     estimatedDuration: "Planlanacak",
@@ -369,7 +380,7 @@ window.FEHO_ROUTES = [
     rideAdvice: "Uygulama içinde durak ekleyerek GeoJSON/KML rotası oluştur.",
     riskWarnings: "Planlanacak.",
     coffeeFoodPhoto: "Planlanacak.",
-    stops: []
+    stops: [createCayyoluStartStop()]
   }
 ];
 
