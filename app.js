@@ -19,6 +19,7 @@ const state = {
   routeRequestId: 0,
   builderStops: [],
   builderRouteId: null,
+  builderForceCayyoluStart: false,
   pickingOnMap: false
 };
 
@@ -402,20 +403,26 @@ function renderStops(stops) {
 
 function startBlankRoute() {
   state.builderRouteId = null;
-  state.builderStops = [cloneStop(CAYYOLU_START)];
+  state.builderForceCayyoluStart = false;
+  state.builderStops = [];
   els.builderName.value = `ROTA-${routes.length + 1} - Yeni Loop`;
   renderBuilderStops();
-  previewBuilderRoute();
-  setRouteStatus("Yeni rota modu: durak eklemek için koordinat gir veya Haritadan Seç'e bas.");
+  clearMapRoute();
+  setRouteStatus("Yeni rota modu: başlangıç için istediğin lokasyonu ilk durak olarak ekle.");
 }
 
 function loadRouteIntoBuilder(route) {
   selectRoute(route.id);
   state.builderRouteId = route.id;
-  state.builderStops = ensureCayyoluStart(route.stops.map(cloneStop));
+  state.builderForceCayyoluStart = !route.isCustom;
+  state.builderStops = state.builderForceCayyoluStart
+    ? ensureCayyoluStart(route.stops.map(cloneStop))
+    : route.stops.map(cloneStop);
   els.builderName.value = route.name;
   renderBuilderStops();
-  setRouteStatus("Düzenleme modu: durak sırasını değiştir, yeni durak ekle ve kaydet.");
+  setRouteStatus(state.builderForceCayyoluStart
+    ? "Mevcut rota modu: Çayyolu 1. durak olarak korunur."
+    : "Düzenleme modu: başlangıç dahil durakları istediğin gibi düzenleyebilirsin.");
 }
 
 function toggleMapPicking() {
@@ -469,8 +476,10 @@ function renderBuilderStops() {
 }
 
 function previewBuilderRoute() {
-  state.builderStops = ensureCayyoluStart(state.builderStops);
-  renderBuilderStops();
+  if (state.builderForceCayyoluStart) {
+    state.builderStops = ensureCayyoluStart(state.builderStops);
+    renderBuilderStops();
+  }
   const route = buildRouteFromBuilder(false);
   if (!route) return;
 
@@ -506,7 +515,9 @@ function buildRouteFromBuilder(showErrors) {
     return null;
   }
 
-  const stops = ensureCayyoluStart(state.builderStops).filter((stop) => Array.isArray(stop.coords));
+  const rawStops = state.builderStops.map(cloneStop);
+  const stops = (state.builderForceCayyoluStart ? ensureCayyoluStart(rawStops) : rawStops)
+    .filter((stop) => Array.isArray(stop.coords));
   if (stops.length < 2) {
     if (showErrors) setRouteStatus("Rota için en az 2 koordinatlı durak gerekli.");
     return null;
@@ -544,6 +555,7 @@ function buildRouteFromBuilder(showErrors) {
 
 function clearBuilder() {
   state.builderRouteId = null;
+  state.builderForceCayyoluStart = false;
   state.builderStops = [];
   els.builderName.value = "";
   els.stopName.value = "";
