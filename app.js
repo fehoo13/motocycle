@@ -12,7 +12,6 @@ const els = {
   statsGrid: document.querySelector("#statsGrid"),
   routeList: document.querySelector("#routeList"),
   searchInput: document.querySelector("#searchInput"),
-  categoryFilter: document.querySelector("#categoryFilter"),
   difficultyFilter: document.querySelector("#difficultyFilter"),
   detailPanel: document.querySelector("#detailPanel"),
   selectedGoogleLink: document.querySelector("#selectedGoogleLink"),
@@ -35,7 +34,6 @@ function init() {
 
 function bindEvents() {
   els.searchInput.addEventListener("input", renderRouteList);
-  els.categoryFilter.addEventListener("change", renderRouteList);
   els.difficultyFilter.addEventListener("change", renderRouteList);
 
   els.routeList.addEventListener("click", (event) => {
@@ -78,10 +76,8 @@ function bindEvents() {
 }
 
 function populateFilters() {
-  const categories = unique(routes.map((route) => route.category));
   const difficulties = unique(routes.map((route) => route.difficulty));
 
-  appendOptions(els.categoryFilter, categories);
   appendOptions(els.difficultyFilter, difficulties);
 }
 
@@ -172,7 +168,6 @@ function renderRouteList() {
       <div class="card-top">
         <div>
           <div class="pill-row">
-            <span class="pill">${escapeHtml(titleCase(route.category))}</span>
             ${route.isFavorite ? "<span class='pill favorite'>Favori</span>" : ""}
             ${route.isPlaceholder ? "<span class='pill warning'>Koordinat bekliyor</span>" : ""}
             ${getDuplicateLinkCount(route) > 1 ? "<span class='pill warning'>Aynı link</span>" : ""}
@@ -205,14 +200,12 @@ function renderRouteList() {
 
 function getFilteredRoutes() {
   const query = els.searchInput.value.trim().toLocaleLowerCase("tr");
-  const category = els.categoryFilter.value;
   const difficulty = els.difficultyFilter.value;
 
   return routes.filter((route) => {
-    const matchesCategory = category === "all" || route.category === category;
     const matchesDifficulty = difficulty === "all" || route.difficulty === difficulty;
     const matchesQuery = !query || getSearchText(route).includes(query);
-    return matchesCategory && matchesDifficulty && matchesQuery;
+    return matchesDifficulty && matchesQuery;
   });
 }
 
@@ -355,7 +348,6 @@ function renderDetails(route) {
   els.detailPanel.innerHTML = `
     <div>
       <div class="pill-row">
-        <span class="pill">${escapeHtml(titleCase(route.category))}</span>
         <span class="pill">${escapeHtml(titleCase(route.difficulty))}</span>
         ${route.isFavorite ? "<span class='pill favorite'>Favori rota</span>" : ""}
         ${route.isPlaceholder ? "<span class='pill warning'>Koordinat bekliyor</span>" : ""}
@@ -513,7 +505,6 @@ function getSearchText(route) {
   return [
     route.name,
     route.description,
-    route.category,
     route.difficulty,
     route.startPoint,
     route.endPoint,
