@@ -244,7 +244,7 @@ function renderRoutePills(route) {
 
   if (route.isFavorite) pills.push({ label: "Favori", className: "favorite" });
   if (route.isCustom) pills.push({ label: "Benim rotam", className: "" });
-  if (route.isLinkRoute) pills.push({ label: "Örnek taslak", className: "" });
+  if (route.isLinkRoute) pills.push({ label: "Kaynak rota", className: "" });
   if (!route.isLinkRoute && route.coordinates.length > 1) pills.push({ label: "Dolu rota", className: "" });
 
   return pills
@@ -255,9 +255,9 @@ function renderRoutePills(route) {
 function getRouteMeta(route) {
   if (route.isLinkRoute && route.coordinates.length <= 1) {
     return [
-      "Taslak kaynak",
+      "Kaynak rota",
       "1. durak Çayyolu",
-      "GeoJSON'a hazır taslak"
+      "GeoJSON'a hazır"
     ];
   }
 
@@ -271,7 +271,7 @@ function getRouteMeta(route) {
 function renderDetailMetrics(route) {
   const metrics = route.isLinkRoute && route.coordinates.length <= 1
     ? [
-        ["Durum", "Örnek taslak"],
+        ["Durum", "Kaynak rota"],
         ["Başlangıç", "Çayyolu"],
         ["Format", "GeoJSON/KML"],
         ["Durak", String(route.stops.length)]
