@@ -1,4 +1,5 @@
 const STORAGE_KEY = "feho_motocycle_routes";
+const ROUTE_SCHEMA_VERSION = "20260612-full-routes";
 const CAYYOLU_START = {
   name: "Çayyolu / Başlangıç",
   description: "Her rota için 1 numaralı başlangıç noktası.",
@@ -358,7 +359,8 @@ function addStopMarkers(stopsWithCoords) {
         html: `<span class="numbered-marker">${index + 1}</span>`,
         iconSize: [30, 30],
         iconAnchor: [15, 15]
-      })
+      }),
+      zIndexOffset: (stopsWithCoords.length - index) * 100
     });
 
     marker.bindPopup(`
@@ -622,6 +624,7 @@ function buildRouteFromBuilder(showErrors) {
     googleMapsUrl: baseRoute?.googleMapsUrl || "",
     image: "assets/hero-cover.jpeg",
     isCustom: true,
+    schemaVersion: ROUTE_SCHEMA_VERSION,
     notes: ["Tarayıcıda oluşturuldu."],
     rideAdvice: "Sürüş öncesi yolu ve hava durumunu kontrol et.",
     riskWarnings: "Yol riski kullanıcı tarafından kontrol edilmeli.",
@@ -817,6 +820,7 @@ function normalizeRoute(route) {
 }
 
 function isUserEditedSeedRoute(route) {
+  if (route.schemaVersion !== ROUTE_SCHEMA_VERSION) return false;
   if (!route.isCustom) return false;
   if (!Array.isArray(route.stops) || route.stops.length < 2) return false;
   return route.stops.every((stop) => Array.isArray(stop.coords));
