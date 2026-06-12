@@ -1,4 +1,5 @@
 const STORAGE_KEY = "feho_motocycle_routes";
+const ROUTE_SCHEMA_VERSION = "20260612-full-routes";
 const CAYYOLU_START = {
   name: "Çayyolu / Başlangıç",
   description: "Her rota için 1 numaralı başlangıç noktası.",
@@ -243,7 +244,7 @@ function renderRoutePills(route) {
 
   if (route.isFavorite) pills.push({ label: "Favori", className: "favorite" });
   if (route.isCustom) pills.push({ label: "Benim rotam", className: "" });
-  if (route.isLinkRoute) pills.push({ label: "Örnek taslak", className: "" });
+  if (route.isLinkRoute) pills.push({ label: "Kaynak rota", className: "" });
   if (!route.isLinkRoute && route.coordinates.length > 1) pills.push({ label: "Dolu rota", className: "" });
 
   return pills
@@ -254,9 +255,9 @@ function renderRoutePills(route) {
 function getRouteMeta(route) {
   if (route.isLinkRoute && route.coordinates.length <= 1) {
     return [
-      "Taslak kaynak",
+      "Kaynak rota",
       "1. durak Çayyolu",
-      "GeoJSON'a hazır taslak"
+      "GeoJSON'a hazır"
     ];
   }
 
@@ -270,7 +271,7 @@ function getRouteMeta(route) {
 function renderDetailMetrics(route) {
   const metrics = route.isLinkRoute && route.coordinates.length <= 1
     ? [
-        ["Durum", "Örnek taslak"],
+        ["Durum", "Kaynak rota"],
         ["Başlangıç", "Çayyolu"],
         ["Format", "GeoJSON/KML"],
         ["Durak", String(route.stops.length)]
@@ -358,7 +359,8 @@ function addStopMarkers(stopsWithCoords) {
         html: `<span class="numbered-marker">${index + 1}</span>`,
         iconSize: [30, 30],
         iconAnchor: [15, 15]
-      })
+      }),
+      zIndexOffset: (stopsWithCoords.length - index) * 100
     });
 
     marker.bindPopup(`
@@ -622,6 +624,7 @@ function buildRouteFromBuilder(showErrors) {
     googleMapsUrl: baseRoute?.googleMapsUrl || "",
     image: "assets/hero-cover.jpeg",
     isCustom: true,
+    schemaVersion: ROUTE_SCHEMA_VERSION,
     notes: ["Tarayıcıda oluşturuldu."],
     rideAdvice: "Sürüş öncesi yolu ve hava durumunu kontrol et.",
     riskWarnings: "Yol riski kullanıcı tarafından kontrol edilmeli.",
@@ -817,6 +820,7 @@ function normalizeRoute(route) {
 }
 
 function isUserEditedSeedRoute(route) {
+  if (route.schemaVersion !== ROUTE_SCHEMA_VERSION) return false;
   if (!route.isCustom) return false;
   if (!Array.isArray(route.stops) || route.stops.length < 2) return false;
   return route.stops.every((stop) => Array.isArray(stop.coords));
