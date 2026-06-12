@@ -469,6 +469,15 @@ p {
   font-weight: 900;
 }
 
+.editable-marker {
+  cursor: grab;
+}
+
+.selected-marker {
+  outline: 3px solid rgba(106, 167, 154, 0.9);
+  outline-offset: 2px;
+}
+
 .route-status {
   min-height: 38px;
   margin: 0;
@@ -545,6 +554,44 @@ p {
   border: 1px solid var(--line);
   border-radius: 8px;
   background: rgba(17, 16, 14, 0.5);
+}
+
+.builder-stop.selected {
+  border-color: rgba(242, 163, 58, 0.78);
+  background: rgba(242, 163, 58, 0.11);
+}
+
+.builder-stop-fields {
+  display: grid;
+  grid-template-columns: minmax(130px, 1fr) minmax(150px, 1fr);
+  gap: 8px;
+}
+
+.builder-stop-fields label {
+  display: grid;
+  gap: 4px;
+}
+
+.builder-stop-fields label span {
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.builder-stop-fields input {
+  width: 100%;
+  min-height: 34px;
+  padding: 7px 9px;
+  border: 1px solid rgba(247, 240, 223, 0.14);
+  border-radius: 8px;
+  color: var(--text);
+  background: rgba(17, 16, 14, 0.86);
+}
+
+.builder-stop-fields input:focus {
+  border-color: rgba(242, 163, 58, 0.78);
+  outline: none;
 }
 
 .stop-number {
@@ -651,6 +698,15 @@ p {
     max-height: none;
   }
 
+  .builder-stop {
+    grid-template-columns: 28px minmax(0, 1fr);
+  }
+
+  .builder-stop .card-actions {
+    grid-column: 1 / -1;
+    flex-wrap: wrap;
+  }
+
   .editor {
     grid-template-columns: 1fr;
   }
@@ -679,7 +735,8 @@ p {
   }
 
   .detail-grid,
-  .builder-grid {
+  .builder-grid,
+  .builder-stop-fields {
     grid-template-columns: 1fr;
   }
 
