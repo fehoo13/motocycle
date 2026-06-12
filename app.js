@@ -202,16 +202,12 @@ function renderRouteList() {
   els.routeList.innerHTML = filteredRoutes.map((route) => `
     <article class="route-card ${route.id === state.selectedRouteId ? "active" : ""}" data-route-id="${escapeHtml(route.id)}" tabindex="0">
       <div class="pill-row">
-        ${route.isFavorite ? "<span class='pill favorite'>Favori</span>" : ""}
-        ${route.isLinkRoute ? "<span class='pill'>Link kayıtlı</span>" : ""}
-        ${route.isCustom ? "<span class='pill'>Benim rotam</span>" : ""}
+        ${renderRoutePills(route)}
       </div>
       <h3>${escapeHtml(route.name)}</h3>
       <p>${escapeHtml(route.description)}</p>
       <div class="route-meta">
-        <span>${formatDistance(route.distanceKm)}</span>
-        <span>${formatNullableMinutes(route.rideMinutes, route.estimatedDuration)}</span>
-        <span>${route.stops.length ? `${route.stops.length} durak` : "Link rotası"}</span>
+        ${getRouteMeta(route).map((item) => `<span>${escapeHtml(item)}</span>`).join("")}
       </div>
       <div class="card-actions">
         <button class="button primary small-button" type="button" data-action="open">Aç</button>
@@ -220,6 +216,53 @@ function renderRouteList() {
       </div>
     </article>
   `).join("");
+}
+
+function renderRoutePills(route) {
+  const pills = [];
+
+  if (route.isFavorite) pills.push({ label: "Favori", className: "favorite" });
+  if (route.isCustom) pills.push({ label: "Benim rotam", className: "" });
+  if (route.isLinkRoute) pills.push({ label: "Örnek taslak", className: "" });
+  if (!route.isLinkRoute && route.coordinates.length > 1) pills.push({ label: "Dolu rota", className: "" });
+
+  return pills
+    .map((pill) => `<span class="pill ${pill.className}">${escapeHtml(pill.label)}</span>`)
+    .join("");
+}
+
+function getRouteMeta(route) {
+  if (route.isLinkRoute && route.coordinates.length <= 1) {
+    return [
+      "Kaynak link kayıtlı",
+      "Çayyolu başlangıç",
+      "GeoJSON'a hazır taslak"
+    ];
+  }
+
+  return [
+    formatDistance(route.distanceKm),
+    formatNullableMinutes(route.rideMinutes, route.estimatedDuration || "Süre hesaplanacak"),
+    `${route.stops.length} durak`
+  ];
+}
+
+function renderDetailMetrics(route) {
+  const metrics = route.isLinkRoute && route.coordinates.length <= 1
+    ? [
+        ["Durum", "Örnek taslak"],
+        ["Başlangıç", "Çayyolu"],
+        ["Format", "GeoJSON/KML"],
+        ["Durak", String(route.stops.length)]
+      ]
+    : [
+        ["Mesafe", formatDistance(route.distanceKm)],
+        ["Sürüş", formatNullableMinutes(route.rideMinutes, route.estimatedDuration || "Süre hesaplanacak")],
+        ["Mola", formatNullableMinutes(route.breakMinutes, "Mola eklenebilir")],
+        ["Durak", String(route.stops.length)]
+      ];
+
+  return metrics.map(([label, value]) => detailMetric(label, value)).join("");
 }
 
 function getFilteredRoutes() {
@@ -274,7 +317,7 @@ async function drawRoute(route) {
     return;
   }
 
-  setRouteStatus("Google Maps kaynak linki kayıtlı. Site içinde çizmek için Durakları Düzenle ile GeoJSON durakları ekle.");
+  setRouteStatus("Örnek rota kaynak linki kayıtlı. Çayyolu başlangıcı haritada görünüyor; çizgi için Durakları Düzenle ile GeoJSON durakları ekle.");
   fitRoute(route);
 }
 
@@ -359,19 +402,14 @@ function renderDetails(route) {
   els.detailPanel.innerHTML = `
     <div>
       <div class="pill-row">
-        <span class="pill">${escapeHtml(titleCase(route.difficulty))}</span>
-        ${route.isLinkRoute ? "<span class='pill'>Google link kaynağı</span>" : ""}
-        ${route.isCustom ? "<span class='pill'>Benim rotam</span>" : ""}
+        ${renderRoutePills(route)}
       </div>
       <h2>${escapeHtml(route.name)}</h2>
       <p>${escapeHtml(route.description)}</p>
     </div>
 
     <div class="detail-grid">
-      ${detailMetric("Mesafe", formatDistance(route.distanceKm))}
-      ${detailMetric("Sürüş", formatNullableMinutes(route.rideMinutes, route.estimatedDuration))}
-      ${detailMetric("Mola", formatNullableMinutes(route.breakMinutes, "Planlanacak"))}
-      ${detailMetric("Durak", route.stops.length ? String(route.stops.length) : "Link rotası")}
+      ${renderDetailMetrics(route)}
     </div>
 
     <div class="card-actions">
@@ -387,7 +425,7 @@ function renderDetails(route) {
 
 function renderStops(stops) {
   if (!stops.length) {
-    return "<div class='empty-state'>Google Maps kaynak linki kayıtlı. Bu rotayı site içinde çizmek için Durakları Düzenle ile haritadan nokta seç veya koordinat gir.</div>";
+    return "<div class='empty-state'>Bu örnek kaynak link olarak kayıtlı. Dolu bir çizim için Durakları Düzenle ile haritadan nokta seç veya koordinat gir.</div>";
   }
 
   return `
@@ -412,7 +450,7 @@ function startBlankRoute() {
   els.builderName.value = `ROTA-${routes.length + 1} - Yeni Loop`;
   renderBuilderStops();
   clearMapRoute();
-  setRouteStatus("Yeni rota modu: başlangıç için istediğin lokasyonu ilk durak olarak ekle.");
+  setRouteStatus("Yeni rota modu: ilk durak nereye tıklarsan orası olur. Kayıt GeoJSON/GeoPandas uyumlu hazırlanır.");
 }
 
 function loadRouteIntoBuilder(route) {
@@ -521,7 +559,7 @@ function focusSelectedRoute() {
     return;
   }
 
-  setRouteStatus("Bu rota kaynak link olarak kayıtlı. Site haritasında çizmek için önce durak ekle.");
+  setRouteStatus("Bu örnek kaynak link olarak kayıtlı. Site haritasında çizmek için önce durak ekle.");
 }
 
 function buildRouteFromBuilder(showErrors) {
@@ -542,20 +580,23 @@ function buildRouteFromBuilder(showErrors) {
 
   const baseRoute = state.builderRouteId ? getRoute(state.builderRouteId) : null;
   const id = state.builderRouteId || `custom-${Date.now()}`;
+  const distanceKm = calculateRouteDistanceKm(stops.map((stop) => stop.coords));
+  const rideMinutes = estimateRideMinutes(distanceKm);
+  const breakMinutes = Math.max(15, stops.length * 10);
 
   return {
     id,
     name,
-    description: "Kullanıcı tarafından oluşturulan rota.",
+    description: "Kullanıcı tarafından oluşturulan GeoJSON/GeoPandas uyumlu rota.",
     startPoint: stops[0].name,
     endPoint: stops[stops.length - 1].name,
-    distanceKm: null,
-    estimatedDuration: "Planlanacak",
-    rideMinutes: null,
-    breakMinutes: null,
-    totalMinutes: null,
+    distanceKm,
+    estimatedDuration: formatMinutes(rideMinutes),
+    rideMinutes,
+    breakMinutes,
+    totalMinutes: rideMinutes + breakMinutes,
     difficulty: baseRoute?.difficulty || "özel",
-    recommendedSeason: baseRoute?.recommendedSeason || "Planlanacak",
+    recommendedSeason: baseRoute?.recommendedSeason || "Kullanıcı seçer",
     roadCharacter: "Kullanıcı tarafından düzenlenen rota.",
     fuelServiceNote: "Yakıt/servis notu eklenecek.",
     googleMapsUrl: baseRoute?.googleMapsUrl || "",
@@ -823,6 +864,34 @@ function parseCoords(value) {
   return [roundCoord(lat), roundCoord(lng)];
 }
 
+function calculateRouteDistanceKm(coordinates) {
+  const total = coordinates.reduce((sum, point, index) => {
+    if (!index) return sum;
+    return sum + haversineKm(coordinates[index - 1], point);
+  }, 0);
+
+  return Math.max(1, Math.round(total));
+}
+
+function haversineKm([lat1, lng1], [lat2, lng2]) {
+  const earthRadiusKm = 6371;
+  const dLat = toRadians(lat2 - lat1);
+  const dLng = toRadians(lng2 - lng1);
+  const a = Math.sin(dLat / 2) ** 2
+    + Math.cos(toRadians(lat1)) * Math.cos(toRadians(lat2)) * Math.sin(dLng / 2) ** 2;
+
+  return 2 * earthRadiusKm * Math.asin(Math.sqrt(a));
+}
+
+function toRadians(degrees) {
+  return degrees * Math.PI / 180;
+}
+
+function estimateRideMinutes(distanceKm) {
+  const minutes = Math.max(15, Math.round((distanceKm / 55) * 60));
+  return Math.ceil(minutes / 5) * 5;
+}
+
 function detailMetric(label, value) {
   return `
     <div class="detail-metric">
@@ -841,7 +910,7 @@ function unique(values) {
 }
 
 function formatDistance(value) {
-  return Number(value) ? `${value} km` : "Mesafe planlanacak";
+  return Number(value) ? `${value} km` : "Mesafe eklenebilir";
 }
 
 function formatNullableMinutes(minutes, fallback) {
