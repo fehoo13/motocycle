@@ -8,10 +8,10 @@
   <link rel="preconnect" href="https://unpkg.com">
   <link rel="preconnect" href="https://tile.openstreetmap.org">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-  <link rel="stylesheet" href="styles.css?v=20260612-full-routes">
+  <link rel="stylesheet" href="styles.css?v=20260612-gis-editor">
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
-  <script src="routes.js?v=20260612-full-routes" defer></script>
-  <script src="app.js?v=20260612-full-routes" defer></script>
+  <script src="routes.js?v=20260612-gis-editor" defer></script>
+  <script src="app.js?v=20260612-gis-editor" defer></script>
 </head>
 <body>
   <div class="app-shell">
@@ -110,7 +110,7 @@
           <div class="panel-heading">
             <div>
               <p class="eyebrow">GeoPandas uyumlu rota</p>
-              <h2 id="builderTitle">Haritadan yeni rota oluştur.</h2>
+              <h2 id="builderTitle">GIS gibi rota düzenle.</h2>
             </div>
             <button class="icon-button" id="clearBuilder" type="button" aria-label="Formu temizle">×</button>
           </div>
@@ -132,7 +132,7 @@
           </div>
 
           <div class="builder-actions">
-            <button class="button secondary small-button" id="pickOnMap" type="button">Haritadan Seç</button>
+            <button class="button secondary small-button" id="pickOnMap" type="button">Haritadan Nokta Ekle</button>
             <button class="button primary small-button" id="addStop" type="button">Durak Ekle</button>
           </div>
 
@@ -143,7 +143,7 @@
             <button class="button secondary" id="downloadSelectedKml" type="button">Seçili KML</button>
             <button class="button secondary" id="downloadSelectedGeoJson" type="button">GeoJSON</button>
           </div>
-          <p class="helper-text">Yeni rotalar boş başlar; ilk durak nereye tıklarsan başlangıç orası olur. GeoJSON çıktısı GeoPandas ile uyumludur.</p>
+          <p class="helper-text">Durak seç, haritaya tıklayıp araya nokta ekle, markerı sürükle, listedeki ad/koordinatı düzenle ve kaydet. GeoJSON çıktısı GeoPandas ile uyumludur.</p>
         </section>
       </aside>
     </main>

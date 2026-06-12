@@ -1,5 +1,5 @@
 const STORAGE_KEY = "feho_motocycle_routes";
-const ROUTE_SCHEMA_VERSION = "20260612-full-routes";
+const ROUTE_SCHEMA_VERSION = "20260612-gis-editor";
 const CAYYOLU_START = {
   name: "Çayyolu / Başlangıç",
   description: "Her rota için 1 numaralı başlangıç noktası.",
@@ -21,6 +21,7 @@ const state = {
   builderStops: [],
   builderRouteId: null,
   builderForceCayyoluStart: false,
+  selectedBuilderIndex: null,
   pickingOnMap: false
 };
 
@@ -118,23 +119,60 @@ function bindEvents() {
 
   els.builderStops.addEventListener("click", (event) => {
     const button = event.target.closest("[data-builder-action]");
+    const row = event.target.closest("[data-builder-index]");
+    if (row && !event.target.closest("input")) {
+      selectBuilderStop(Number(row.dataset.builderIndex));
+    }
+
     if (!button) return;
 
     const index = Number(button.dataset.index);
     const action = button.dataset.builderAction;
+    selectBuilderStop(index, false);
 
     if (action === "remove") {
       state.builderStops.splice(index, 1);
+      state.selectedBuilderIndex = normalizeSelectedIndex(index);
     }
 
     if (action === "up" && index > 0) {
       [state.builderStops[index - 1], state.builderStops[index]] = [state.builderStops[index], state.builderStops[index - 1]];
+      state.selectedBuilderIndex = index - 1;
     }
 
     if (action === "down" && index < state.builderStops.length - 1) {
       [state.builderStops[index + 1], state.builderStops[index]] = [state.builderStops[index], state.builderStops[index + 1]];
+      state.selectedBuilderIndex = index + 1;
     }
 
+    if (action === "insert-after") {
+      insertStopAt(index + 1, createStopFromInputs(index + 2));
+    }
+
+    if (action === "focus") {
+      const stop = state.builderStops[index];
+      if (stop?.coords) state.map.setView(stop.coords, Math.max(state.map.getZoom(), 13));
+    }
+
+    renderBuilderStops();
+    previewBuilderRoute();
+  });
+
+  els.builderStops.addEventListener("input", (event) => {
+    const input = event.target.closest("[data-builder-field]");
+    if (!input) return;
+    if (input.dataset.builderField !== "name") return;
+
+    const index = Number(input.dataset.index);
+    updateBuilderStopField(index, input.dataset.builderField, input.value);
+  });
+
+  els.builderStops.addEventListener("change", (event) => {
+    const input = event.target.closest("[data-builder-field]");
+    if (!input) return;
+
+    const index = Number(input.dataset.index);
+    updateBuilderStopField(index, input.dataset.builderField, input.value);
     renderBuilderStops();
     previewBuilderRoute();
   });
@@ -180,13 +218,12 @@ function initMap() {
   state.map.on("click", (event) => {
     if (!state.pickingOnMap) return;
 
-    const name = els.stopName.value.trim() || `Durak ${state.builderStops.length + 1}`;
-    state.builderStops.push({
-      name,
+    const insertIndex = getInsertIndex();
+    insertStopAt(insertIndex, {
+      ...createStopFromInputs(insertIndex + 1),
       description: "Haritadan seçilen durak.",
-      note: "Kullanıcı tarafından eklendi.",
-      coords: [roundCoord(event.latlng.lat), roundCoord(event.latlng.lng)],
-      custom: true
+      note: "Sürükleyerek veya listeden koordinat girerek düzenlenebilir.",
+      coords: [roundCoord(event.latlng.lat), roundCoord(event.latlng.lng)]
     });
     els.stopName.value = "";
     els.stopCoords.value = "";
@@ -351,16 +388,33 @@ function clearMapRoute() {
   state.markerLayer.clearLayers();
 }
 
-function addStopMarkers(stopsWithCoords) {
+function addStopMarkers(stopsWithCoords, options = {}) {
   stopsWithCoords.forEach((stop, index) => {
     const marker = L.marker(stop.coords, {
+      draggable: Boolean(options.draggable),
       icon: L.divIcon({
         className: "",
-        html: `<span class="numbered-marker">${index + 1}</span>`,
+        html: `<span class="numbered-marker ${options.draggable ? "editable-marker" : ""} ${index === state.selectedBuilderIndex ? "selected-marker" : ""}">${index + 1}</span>`,
         iconSize: [30, 30],
         iconAnchor: [15, 15]
       }),
       zIndexOffset: (stopsWithCoords.length - index) * 100
+    });
+
+    marker.on("click", () => {
+      if (!options.draggable) return;
+      selectBuilderStop(index);
+    });
+
+    marker.on("dragend", (event) => {
+      if (!options.draggable) return;
+      const latlng = event.target.getLatLng();
+      state.builderStops[index].coords = [roundCoord(latlng.lat), roundCoord(latlng.lng)];
+      state.builderStops[index].custom = true;
+      selectBuilderStop(index, false);
+      renderBuilderStops();
+      previewBuilderRoute();
+      setRouteStatus(`${index + 1}. durak güncellendi. Kaydet ile rotayı saklayabilirsin.`);
     });
 
     marker.bindPopup(`
@@ -468,6 +522,7 @@ function renderStops(stops) {
 function startBlankRoute() {
   state.builderRouteId = null;
   state.builderForceCayyoluStart = false;
+  state.selectedBuilderIndex = null;
   state.builderStops = [];
   els.builderName.value = `ROTA-${routes.length + 1} - Yeni Loop`;
   renderBuilderStops();
@@ -482,6 +537,7 @@ function loadRouteIntoBuilder(route) {
   state.builderStops = state.builderForceCayyoluStart
     ? ensureCayyoluStart(route.stops.map(cloneStop))
     : route.stops.map(cloneStop);
+  state.selectedBuilderIndex = state.builderStops.length ? 0 : null;
   els.builderName.value = route.name;
   renderBuilderStops();
   setRouteStatus(state.builderForceCayyoluStart
@@ -493,7 +549,9 @@ function toggleMapPicking() {
   state.pickingOnMap = !state.pickingOnMap;
   els.pickOnMap.classList.toggle("primary", state.pickingOnMap);
   els.pickOnMap.classList.toggle("secondary", !state.pickingOnMap);
-  setRouteStatus(state.pickingOnMap ? "Haritada tıkladığın yer yeni durak olacak." : "Haritadan seçme kapandı.");
+  setRouteStatus(state.pickingOnMap
+    ? "Haritada tıkladığın yer seçili durağın arkasına eklenecek. Markerları sürükleyerek koordinatı değiştirebilirsin."
+    : "Haritadan seçme kapandı.");
 }
 
 function addManualStop() {
@@ -503,8 +561,8 @@ function addManualStop() {
     return;
   }
 
-  state.builderStops.push({
-    name: els.stopName.value.trim() || `Durak ${state.builderStops.length + 1}`,
+  insertStopAt(getInsertIndex(), {
+    name: els.stopName.value.trim() || `Durak ${getInsertIndex() + 1}`,
     description: "Kullanıcı tarafından eklendi.",
     note: "Manuel durak.",
     coords,
@@ -517,20 +575,97 @@ function addManualStop() {
   previewBuilderRoute();
 }
 
+function getInsertIndex() {
+  if (state.selectedBuilderIndex === null) return state.builderStops.length;
+  return Math.min(state.selectedBuilderIndex + 1, state.builderStops.length);
+}
+
+function insertStopAt(index, stop) {
+  const safeIndex = Math.max(0, Math.min(index, state.builderStops.length));
+  state.builderStops.splice(safeIndex, 0, stop);
+  state.selectedBuilderIndex = safeIndex;
+}
+
+function createStopFromInputs(position) {
+  return {
+    name: els.stopName.value.trim() || `Ara Durak ${position}`,
+    description: "Kullanıcı tarafından eklendi.",
+    note: "GeoJSON/GeoPandas uyumlu rota noktası.",
+    coords: state.builderStops[state.selectedBuilderIndex ?? -1]?.coords
+      ? [...state.builderStops[state.selectedBuilderIndex].coords]
+      : [...CAYYOLU_START.coords],
+    custom: true
+  };
+}
+
+function selectBuilderStop(index, shouldRender = true) {
+  if (!Number.isInteger(index) || index < 0 || index >= state.builderStops.length) return;
+  state.selectedBuilderIndex = index;
+  const stop = state.builderStops[index];
+  els.stopName.value = stop.name || "";
+  els.stopCoords.value = Array.isArray(stop.coords) ? `${stop.coords[0].toFixed(6)}, ${stop.coords[1].toFixed(6)}` : "";
+
+  if (shouldRender) {
+    renderBuilderStops();
+    previewBuilderRoute();
+  }
+}
+
+function normalizeSelectedIndex(removedIndex) {
+  if (!state.builderStops.length) return null;
+  if (state.selectedBuilderIndex === null) return null;
+  if (removedIndex < state.selectedBuilderIndex) return state.selectedBuilderIndex - 1;
+  if (removedIndex === state.selectedBuilderIndex) return Math.min(removedIndex, state.builderStops.length - 1);
+  return state.selectedBuilderIndex;
+}
+
+function updateBuilderStopField(index, field, value) {
+  const stop = state.builderStops[index];
+  if (!stop) return;
+  state.selectedBuilderIndex = index;
+
+  if (field === "name") {
+    stop.name = value.trim() || `Durak ${index + 1}`;
+    els.stopName.value = stop.name;
+    return;
+  }
+
+  if (field === "coords") {
+    const coords = parseCoords(value);
+    if (!coords) {
+      setRouteStatus("Koordinat formatı: 39.8820606, 32.6893723");
+      return;
+    }
+
+    stop.coords = coords;
+    stop.custom = true;
+    els.stopCoords.value = `${coords[0].toFixed(6)}, ${coords[1].toFixed(6)}`;
+    setRouteStatus(`${index + 1}. durak koordinatı güncellendi.`);
+  }
+}
+
 function renderBuilderStops() {
   if (!state.builderStops.length) {
-    els.builderStops.innerHTML = "<li class='empty-state'>Henüz durak yok.</li>";
+    els.builderStops.innerHTML = "<li class='empty-state'>Henüz durak yok. Haritadan Nokta Ekle'yi açıp haritaya tıkla veya koordinat gir.</li>";
     return;
   }
 
   els.builderStops.innerHTML = state.builderStops.map((stop, index) => `
-    <li class="builder-stop">
+    <li class="builder-stop ${index === state.selectedBuilderIndex ? "selected" : ""}" data-builder-index="${index}">
       <span class="stop-number">${index + 1}</span>
-      <div>
-        <strong>${escapeHtml(stop.name)}</strong>
-        <span>${stop.coords ? `${stop.coords[0].toFixed(6)}, ${stop.coords[1].toFixed(6)}` : "Koordinat yok"}</span>
+      <div class="builder-stop-fields">
+        <label>
+          <span>Durak adı</span>
+          <input type="text" value="${escapeHtml(stop.name)}" data-builder-field="name" data-index="${index}">
+        </label>
+        <label>
+          <span>Koordinat</span>
+          <input type="text" value="${stop.coords ? `${stop.coords[0].toFixed(6)}, ${stop.coords[1].toFixed(6)}` : ""}" data-builder-field="coords" data-index="${index}">
+        </label>
       </div>
       <div class="card-actions">
+        <button class="button secondary small-button" type="button" data-builder-action="focus" data-index="${index}">Göster</button>
+        <button class="button secondary small-button" type="button" data-builder-action="insert-after" data-index="${index}">Araya Ekle</button>
         <button class="button secondary small-button" type="button" data-builder-action="up" data-index="${index}">↑</button>
         <button class="button secondary small-button" type="button" data-builder-action="down" data-index="${index}">↓</button>
         <button class="button secondary small-button" type="button" data-builder-action="remove" data-index="${index}">Sil</button>
@@ -544,11 +679,11 @@ function previewBuilderRoute() {
     state.builderStops = ensureCayyoluStart(state.builderStops);
     renderBuilderStops();
   }
-  const route = buildRouteFromBuilder(false);
-  if (!route) return;
+  const route = buildRouteFromBuilder(false) || createPreviewRouteFromBuilder();
+  if (!route.stops.length) return;
 
   clearMapRoute();
-  addStopMarkers(route.stops.filter((stop) => Array.isArray(stop.coords)));
+  addStopMarkers(route.stops.filter((stop) => Array.isArray(stop.coords)), { draggable: true });
   if (route.coordinates.length > 1) {
     state.routeLine = drawRouteLine(route.coordinates, true);
   }
@@ -572,6 +707,14 @@ function saveBuilderRoute() {
 }
 
 function focusSelectedRoute() {
+  if (state.builderStops.length) {
+    const builderRoute = buildRouteFromBuilder(false) || createPreviewRouteFromBuilder();
+    previewBuilderRoute();
+    fitRoute(builderRoute);
+    setRouteStatus("Editördeki GeoJSON rotası haritada açıldı. Markerları sürükleyebilir, araya nokta ekleyebilirsin.");
+    return;
+  }
+
   const route = getSelectedRoute();
   if (!route) return;
 
@@ -634,9 +777,23 @@ function buildRouteFromBuilder(showErrors) {
   };
 }
 
+function createPreviewRouteFromBuilder() {
+  const stops = state.builderStops
+    .map(cloneStop)
+    .filter((stop) => Array.isArray(stop.coords));
+
+  return {
+    id: "preview-route",
+    name: els.builderName.value.trim() || "Yeni rota",
+    stops,
+    coordinates: stops.map((stop) => stop.coords)
+  };
+}
+
 function clearBuilder() {
   state.builderRouteId = null;
   state.builderForceCayyoluStart = false;
+  state.selectedBuilderIndex = null;
   state.builderStops = [];
   els.builderName.value = "";
   els.stopName.value = "";
