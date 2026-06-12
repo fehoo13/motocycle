@@ -74,10 +74,16 @@ function bindEvents() {
   els.clearBuilder.addEventListener("click", clearBuilder);
 
   els.routeList.addEventListener("click", (event) => {
+    const actionButton = event.target.closest("[data-action]");
+    if (actionButton) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+
     const card = event.target.closest(".route-card");
     if (!card) return;
 
-    const action = event.target.closest("[data-action]")?.dataset.action || "open";
+    const action = actionButton?.dataset.action || "open";
     const route = getRoute(card.dataset.routeId);
     if (!route) return;
 
@@ -93,6 +99,20 @@ function bindEvents() {
     }
 
     selectRoute(route.id);
+  });
+
+  els.detailPanel.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-detail-action]");
+    if (!button) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+
+    const action = button.dataset.detailAction;
+    if (action === "edit") loadRouteIntoBuilder(getSelectedRoute());
+    if (action === "map") focusSelectedRoute();
+    if (action === "kml") downloadKml(getSelectedRoute());
+    if (action === "geojson") downloadGeoJson(getSelectedRoute());
   });
 
   els.builderStops.addEventListener("click", (event) => {
@@ -234,8 +254,8 @@ function renderRoutePills(route) {
 function getRouteMeta(route) {
   if (route.isLinkRoute && route.coordinates.length <= 1) {
     return [
-      "Kaynak link kayıtlı",
-      "Çayyolu başlangıç",
+      "Taslak kaynak",
+      "1. durak Çayyolu",
       "GeoJSON'a hazır taslak"
     ];
   }
@@ -413,10 +433,10 @@ function renderDetails(route) {
     </div>
 
     <div class="card-actions">
-      <button class="button primary small-button" type="button" onclick="window.FEHO_APP.editSelected()">Durakları Düzenle</button>
-      <button class="button secondary small-button" type="button" onclick="window.FEHO_APP.focusSelected()">Haritada Aç</button>
-      <button class="button secondary small-button" type="button" onclick="window.FEHO_APP.downloadSelected()">KML indir</button>
-      <button class="button secondary small-button" type="button" onclick="window.FEHO_APP.downloadSelectedGeoJson()">GeoJSON</button>
+      <button class="button primary small-button" type="button" data-detail-action="edit">Durakları Düzenle</button>
+      <button class="button secondary small-button" type="button" data-detail-action="map">Haritada Aç</button>
+      <button class="button secondary small-button" type="button" data-detail-action="kml">KML indir</button>
+      <button class="button secondary small-button" type="button" data-detail-action="geojson">GeoJSON</button>
     </div>
 
     ${renderStops(route.stops)}
@@ -769,18 +789,37 @@ function routeToKml(route) {
 
 function mergeStoredRoutes(staticRoutes) {
   const storedRoutes = getStoredRoutes();
-  const byId = new Map(staticRoutes.map((route) => [route.id, route]));
+  const staticIds = new Set(staticRoutes.map((route) => route.id));
+  const byId = new Map(staticRoutes.map((route) => [route.id, normalizeRoute(route)]));
 
   storedRoutes.forEach((route) => {
-    byId.set(route.id, route);
+    if (!route?.id) return;
+
+    if (staticIds.has(route.id) && !isUserEditedSeedRoute(route)) {
+      return;
+    }
+
+    byId.set(route.id, normalizeRoute(route));
   });
 
-  return [...byId.values()].map((route) => ({
+  return [...byId.values()];
+}
+
+function normalizeRoute(route) {
+  const stops = Array.isArray(route.stops) ? route.stops.map(cloneStop) : [];
+  return {
     ...route,
-    coordinates: route.stops
+    stops,
+    coordinates: stops
       .filter((stop) => Array.isArray(stop.coords))
       .map((stop) => stop.coords)
-  }));
+  };
+}
+
+function isUserEditedSeedRoute(route) {
+  if (!route.isCustom) return false;
+  if (!Array.isArray(route.stops) || route.stops.length < 2) return false;
+  return route.stops.every((stop) => Array.isArray(stop.coords));
 }
 
 function ensureCayyoluStart(stops) {
