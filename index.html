@@ -8,15 +8,15 @@
   <link rel="preconnect" href="https://unpkg.com">
   <link rel="preconnect" href="https://tile.openstreetmap.org">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-  <link rel="stylesheet" href="styles.css?v=20260611-cayyolu-start">
+  <link rel="stylesheet" href="styles.css?v=20260612-doc-fixes">
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
-  <script src="routes.js?v=20260611-cayyolu-start" defer></script>
-  <script src="app.js?v=20260611-cayyolu-start" defer></script>
+  <script src="routes.js?v=20260612-doc-fixes" defer></script>
+  <script src="app.js?v=20260612-doc-fixes" defer></script>
 </head>
 <body>
   <div class="app-shell">
     <header class="topbar">
-      <a class="brand" href="#planner" aria-label="Feho's Motocycle Road">
+      <a class="brand" href="#home" aria-label="Feho's Motocycle Road">
         <span class="brand-mark">FM</span>
         <span>Feho's Motocycle Road</span>
       </a>
@@ -26,12 +26,49 @@
       </div>
     </header>
 
+    <section class="cover-hero" id="home" aria-label="Feho's Motocycle Road kapak">
+      <div class="hero-copy">
+        <p class="eyebrow">Premium moto route planner</p>
+        <h1>Feho's Motocycle Road</h1>
+        <p class="hero-lede">Yeni motosiklet rotanı harita üzerinde oluştur, örnek arşivden ilham al, KML veya GeoJSON olarak indir. GeoJSON çıktısı GeoPandas iş akışına hazır kalır.</p>
+        <div class="hero-actions">
+          <a class="button primary" href="#planner">Yeni Rota Planla</a>
+          <a class="button secondary" href="#routeList">Örnek Arşiv</a>
+        </div>
+        <div class="hero-stats" aria-label="Rota özeti">
+          <div>
+            <strong>9</strong>
+            <span>örnek rota</span>
+          </div>
+          <div>
+            <strong>Çayyolu</strong>
+            <span>örnek çıkış</span>
+          </div>
+          <div>
+            <strong>KML</strong>
+            <span>indirilebilir</span>
+          </div>
+          <div>
+            <strong>GeoJSON</strong>
+            <span>GeoPandas'a hazır</span>
+          </div>
+        </div>
+      </div>
+
+      <figure class="hero-visual">
+        <div class="hero-frame">
+          <img src="assets/hero-cover.jpeg" alt="Sarı motosikletle sahil yolunda macera sürüşü illüstrasyonu">
+        </div>
+        <figcaption>Adventure mode on. Harita aşağıda, yol hazır.</figcaption>
+      </figure>
+    </section>
+
     <main class="planner-app" id="planner">
       <aside class="sidebar" aria-label="Rota paneli">
         <section class="panel intro-panel">
           <p class="eyebrow">Moto planner</p>
-          <h1>Rotalar sade. Harita büyük. Aksiyon net.</h1>
-          <p>Rotayı seç, durakları düzenle, haritada aç veya KML indir.</p>
+          <h1>Yeni rota oluştur. Örneklerden ilham al.</h1>
+          <p>Bu arşiv başlangıç örneği; asıl akış haritadan kendi rotanı çizmek, düzenlemek ve indirmek.</p>
         </section>
 
         <section class="panel controls-panel" aria-label="Rota arama">
@@ -47,7 +84,7 @@
           </label>
         </section>
 
-        <section class="route-list" id="routeList" aria-label="Rota listesi"></section>
+        <section class="route-list" id="routeList" aria-label="Örnek rota listesi"></section>
       </aside>
 
       <section class="map-stage" aria-label="Rota haritası">
@@ -72,8 +109,8 @@
         <section class="panel builder-panel" aria-labelledby="builderTitle">
           <div class="panel-heading">
             <div>
-              <p class="eyebrow">Rota oluştur</p>
-              <h2 id="builderTitle">Harita üzerinde durak ekle.</h2>
+              <p class="eyebrow">GeoPandas uyumlu rota</p>
+              <h2 id="builderTitle">Haritadan yeni rota oluştur.</h2>
             </div>
             <button class="icon-button" id="clearBuilder" type="button" aria-label="Formu temizle">×</button>
           </div>
@@ -106,7 +143,7 @@
             <button class="button secondary" id="downloadSelectedKml" type="button">Seçili KML</button>
             <button class="button secondary" id="downloadSelectedGeoJson" type="button">GeoJSON</button>
           </div>
-          <p class="helper-text">Yeni rotalar bu tarayıcıda kaydedilir. GeoJSON çıktısı GeoPandas ile uyumludur; kalıcı repo rotası yapmak için durakları `routes.js` içine ekleyebilirsin.</p>
+          <p class="helper-text">Yeni rotalar boş başlar; ilk durak nereye tıklarsan başlangıç orası olur. GeoJSON çıktısı GeoPandas ile uyumludur.</p>
         </section>
       </aside>
     </main>
